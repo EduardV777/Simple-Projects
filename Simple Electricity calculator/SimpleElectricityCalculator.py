@@ -1,5 +1,6 @@
 #NOT FINISHED
 
+#day 6:00 - 22:00 night 22:00 - 6:00
 def initConfigure(language="BG"):
     global guide; global head; global lang; lang = language
     if lang=="BG":
@@ -14,16 +15,71 @@ def initConfigure(language="BG"):
               "To go through all steps successfully, you have to read the guide carefully.\n 1 - First of all you will see the starting menu where you can enter the option you choose according to the action you want to perform.\n"\
               "If you choose option '1', you will start a new calculation. You will be asked to enter the name of your energy supplier, after that you will be able to enter the appliances and their consumption.\n"\
               "The total cost of your consumption will be calculated for the chosen period of time. After you do that you will be able to enter a new option from the starting menu.\n\n"
-def performCalculation():
-    pass
+def performCalculation(appliancesList, days):
+    #kwH
+    dayTariff=0.14666; nightTariff=0.06245; totalConsumption=0
+    for k in range(0,len(appliancesList)-1,+2):
+        print(appliancesList[k])
+        while True:
+            dayTime=input(f"В каква част от денонощието използвате уреда {appliancesList[k]}(Пример: Day, DayNight, Night) - ")
+            if dayTime=="Day":
+                while True:
+                    hours=int(input("Колко часа от деня използвате уреда?"))
+                    if hours>16:
+                        print(f"[Грешка]: Надвишавате часовете за избраната част от денонощието - {dayTime}")
+                    elif hours<1:
+                        print(f"[Грешка]: Не може часовете да са под 0.")
+                        continue
+                    else:
+                        hoursDay=hours
+                        totalConsumption += ((appliancesList[k + 1] * hoursDay) * 0.14666)*days
+                        break
+            elif dayTime=="DayNight":
+                while True:
+                    hours=int(input("Колко часа от деня използвате уреда?"))
+                    if hours>16:
+                        print(f"[Грешка]: Надвишавате часовете за избраната част от денонощието - {dayTime}")
+                    elif hours<1:
+                        print(f"[Грешка]: Не може часовете да са под 0.")
+                        continue
+                    else:
+                        hoursDay=hours
+                        totalConsumption += ((appliancesList[k + 1] * hoursDay) * 0.14666)*days
+                        while True:
+                            hours = int(input("Колко часа от нощта използвате уреда?"))
+                            if hours > 8:
+                                print(f"[Грешка]: Надвишавате часовете за избраната част от денонощието - {dayTime}")
+                            elif hours < 1:
+                                print(f"[Грешка]: Не може часовете да са под 0.")
+                                continue
+                            else:
+                                nightHours=hours
+                                totalConsumption += ((appliancesList[k + 1] * nightHours) * 0.06245)*days
+                                break
+                        break
+            elif dayTime=="Night":
+                while True:
+                    hours=int(input("Колко часа от нощта използвате уреда?"))
+                    if hours>8:
+                        print(f"[Грешка]: Надвишавате часовете за избраната част от денонощието - {dayTime}")
+                    elif hours<1:
+                        print(f"[Грешка]: Не може часовете да са под 0.")
+                        continue
+                    else:
+                        nightHours=hours
+                        totalConsumption += ((appliancesList[k + 1] * nightHours) * 0.06245)*days
+                        break
+            else:
+                print("[Грешка]: Не въведохте правилно този параметър!\n\n")
+                continue
+            break
+    print(f"Вашата консумация за период от {days} дни ще бъде - {totalConsumption:.2f} лева.")
 def BeginCalculation():
-    global totalConsumption; totalConsumption=0
+    totalConsumption=0
     while True:
         if lang=="BG":
             print("Изберете вашия доставчик(CEZ / EVN / EnergoPro) - "); energySupplier=input()
             if energySupplier=="CEZ" or energySupplier=="cez":
-                #kwh
-                dayTariff=0.14666; nightTariff=0.06245
                 print("Много добре, вие избрахте доставчик CEZ!\nЗа какъв период искате да изчислите вашата консумация(дни)?")
                 days=int(input())
                 appliances=[]; consumptionW=[]
@@ -34,6 +90,9 @@ def BeginCalculation():
                         print("[Грешка]: Минималната дължина на името на уреда е 4!\n\n")
                         continue
                     elif appliance=="/next":
+                        #convert consumption to kwH
+                        totalConsumption=totalConsumption/1000
+                        performCalculation(appliances, days)
                         break
                     else:
                         consumptionOfAppliance=int(input(f"Въведете консумацията на {appliance}(W): "))
@@ -42,7 +101,9 @@ def BeginCalculation():
                             continue
                         else:
                             totalConsumption+=consumptionOfAppliance
-                            continue
+                            #W->kWh
+                            totalConsumption/=1000
+                            appliances.append(appliance); appliances.append(totalConsumption)
             elif energySupplier=="EVN" or energySupplier=="evn":
                 pass
             elif energySupplier=="EnergoPro" or energySupplier=="energopro" or energySupplier=="Energopro":
