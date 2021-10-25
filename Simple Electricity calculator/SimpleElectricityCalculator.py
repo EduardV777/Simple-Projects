@@ -1,3 +1,5 @@
+#NOT FINISHED
+
 def initConfigure(language="BG"):
     global guide; global head; global lang; lang = language
     if lang=="BG":
