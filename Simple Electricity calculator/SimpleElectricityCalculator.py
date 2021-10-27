@@ -1,4 +1,3 @@
-#NOT FINISHED
 def initConfigure(language="BG"):
     global guide; global head; global lang; lang = language
     if lang=="BG":
@@ -19,25 +18,35 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
         dayTariff=0.14666; nightTariff=0.06245
     elif energySupplierCode==2:
         if consumption*days<=2499:
-            dayTariff = 0.38636; nightTariff = 0.00026208
+            dayTariff = 0.38636; nightTariff = 0.05464
         elif 2500<=consumption*days<=8300:
             dayTariff = 0.36944; nightTariff = 0.26208
     elif energySupplierCode==3:
         dayTariff = 0.14778; nightTariff = 0.05787
-    totalConsumption=0; dayTime=""
+    totalConsumption=0; daytime=""
+    def constructMessages(val1=0,val2=""):
+        global msg3; global err1
+        totalConsumption=val1; dayTime=val2
+        if lang=="BG":
+            msg3 = f"\nВашата консумация за период от {days} дни ще бъде - {totalConsumption:.2f} лева.\n\n"
+            err1 = f"\n[Грешка]: Надвишавате часовете за избраната част от денонощието - {dayTime}\n"
+        elif lang=="EN":
+            msg3 = f"\nYour consumption for this period of {days} days will be - {totalConsumption:.2f} leva.\n\n"
+            err1 = f"\n[Error]: You are exceeding the hours for this part of the day - {dayTime}\n"
     for k in range(0,len(appliancesList)-1,+2):
         if lang=="BG":
-            msg1=f"В каква част от денонощието използвате уреда '{appliancesList[k]}' (Пример: Day, DayNight, Night) - "; msg2="Колко часа от деня използвате уреда?"; msg3=f"\nВашата консумация за период от {days} дни ще бъде - {totalConsumption:.2f} лева."
-            err1=f"[Грешка]: Надвишавате часовете за избраната част от денонощието - {dayTime}"; err2=f"[Грешка]: Не може часовете да са под 0."; err3="[Грешка]: Не въведохте правилно този параметър!\n\n"
+            msg1=f"В каква част от денонощието използвате уреда '{appliancesList[k]}' (Пример: Day, DayNight, Night) - "; msg2="Колко часа от деня използвате уреда?"
+            err2=f"[Грешка]: Не може часовете да са под 0."; err3="[Грешка]: Не въведохте правилно този параметър!\n\n"
         elif lang=="EN":
-            msg1 = f"In what time of the day are you using the appliance '{appliancesList[k]}' (Example: Day, DayNight, Night) - "; msg2 = "How much hours of the day are you using the appliance?"; msg3 = f"\nYour consumption for this period of {days} days will be - {totalConsumption:.2f} leva."
-            err1 = f"[Error]: You are exceeding the hours for this part of the day - {dayTime}"; err2 = f"[Error]: Hours cannot be below 0."; err3 = "[Error]: You didn't enter that parameter correctly!\n\n"
+            msg1 = f"In what time of the day are you using the appliance '{appliancesList[k]}' (Example: Day, DayNight, Night) - "; msg2 = "How much hours of the day are you using the appliance?"
+            err2 = f"[Error]: Hours cannot be below 0."; err3 = "[Error]: You didn't enter that parameter correctly!\n\n"
         while True:
             dayTime=input(msg1)
             if dayTime=="Day":
                 while True:
                     hours=int(input(msg2))
                     if hours>16:
+                        constructMessages(0,dayTime)
                         print(err1)
                     elif hours<1:
                         print(err2)
@@ -50,6 +59,7 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
                 while True:
                     hours=int(input(msg2))
                     if hours>16:
+                        constructMessages(0, dayTime)
                         print(err1)
                     elif hours<1:
                         print(err2)
@@ -60,6 +70,7 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
                         while True:
                             hours = int(input(msg2))
                             if hours > 8:
+                                constructMessages(0, dayTime)
                                 print(err1)
                             elif hours < 1:
                                 print(err2)
@@ -73,6 +84,7 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
                 while True:
                     hours=int(input(msg2))
                     if hours>8:
+                        constructMessages(0, dayTime)
                         print(err1)
                     elif hours<1:
                         print(err2)
@@ -85,21 +97,32 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
                 print(err3)
                 continue
             break
+    constructMessages(totalConsumption, dayTime)
     print(msg3)
+    main()
 def BeginCalculation():
-    totalConsumption=0; energySupplier=""; appliance=""; consumptionOfAppliance=0
+    totalConsumption=0
+    def constructMessages (val1="",val2="",val3=0):
+        global msg; global errInvalidConsumption; global ask2
+        energySupplier=val1; appliance=val2; consumptionOfAppliance=val3
+        if lang=="BG":
+            msg = f"Много добре, вие избрахте доставчик {energySupplier}!\nЗа какъв период искате да изчислите вашата консумация(дни)?"
+            errInvalidConsumption = f"\n[Грешка]: Невалидна консумация за уред '{appliance}' - {consumptionOfAppliance} W\n"
+            ask2 = f"Въведете консумацията на {appliance}(W): "
+        elif lang=="EN":
+            msg = f"Very well, you chose supplier {energySupplier}!\nFor what period of time do you want to perform the calculation(days)?"
+            errInvalidConsumption = f"\n[Error]: Invalid consumption for appliance '{appliance}' - {consumptionOfAppliance} W\n"
+            ask2 = f"Enter consumption of {appliance}(W): "
     if lang=="BG":
         q1="Изберете вашия доставчик(CEZ / EVN / EnergoPro) - "
-        errInvalidSupplier="[Грешка]: Невалиден доставчик! Опитайте пак.\n\n"; errLength="[Грешка]: Минималната дължина на името на уреда е 4!\n\n"; errInvalidConsumption=f"[Грешка]: Невалидна консумация за уред '{appliance}' - {consumptionOfAppliance} W"
-        msg1=f"Много добре, вие избрахте доставчик {energySupplier}!\nЗа какъв период искате да изчислите вашата консумация(дни)?"
-        notice1="[Внимание: За да преминете към следващия етап, въведете команда /next]\n"
-        ask1="Въведете електроуред: "; ask2=f"Въведете консумацията на {appliance}(W): "
+        errInvalidSupplier="[Грешка]: Невалиден доставчик! Опитайте пак.\n\n"; errLength="\n[Грешка]: Минималната дължина на името на уреда е 4!\n\n"
+        notice1="\n[Внимание: За да преминете към следващия етап, въведете команда /next]\n"
+        ask1="Въведете електроуред: "
     elif lang=="EN":
         q1 = "Choose your energy supplier(CEZ / EVN / EnergoPro) - "
-        errInvalidSupplier = "[Error]: Invalid supplier! Try again.\n\n"; errLength = "[Error]: Minimum length of appliance's name is 4!\n\n"; errInvalidConsumption = f"[Error]: Invalid consumption for appliance '{appliance}' - {consumptionOfAppliance} W"
-        msg1 = f"Very well, you chose supplier {energySupplier}!\nFor what period of time do you want to perform the calculation(days)?"
-        notice1 = "[Notice: To go to the next stage, enter the command /next]\n"
-        ask1 = "Enter appliance name: "; ask2 = f"Enter consumption of {appliance}(W): "
+        errInvalidSupplier = "[Error]: Invalid supplier! Try again.\n\n"; errLength = "\n[Error]: Minimum length of appliance's name is 4!\n\n"
+        notice1 = "\n[Notice: To go to the next stage, enter the command /next]\n"
+        ask1 = "Enter appliance name: "
     while True:
         energySupplier = input(q1)
         if energySupplier == "CEZ" or energySupplier == "cez":
@@ -115,7 +138,8 @@ def BeginCalculation():
         else:
             print(errInvalidSupplier)
             continue
-    print(msg1)
+    constructMessages(energySupplier)
+    print(msg)
     days = int(input())
     appliances = []
     print(notice1)
@@ -130,6 +154,7 @@ def BeginCalculation():
             performCalculation(appliances, days, energySupplierCode, totalConsumption)
             break
         else:
+            constructMessages(energySupplier,appliance)
             consumptionOfAppliance = int(input(ask2))
             if consumptionOfAppliance < 1:
                 print(errInvalidConsumption)
