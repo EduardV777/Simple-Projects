@@ -35,10 +35,10 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
             err1 = f"\n[Error]: You are exceeding the hours for this part of the day - {dayTime}\n"
     for k in range(0,len(appliancesList)-1,+2):
         if lang=="BG":
-            msg1=f"В каква част от денонощието използвате уреда '{appliancesList[k]}' (Пример: Day, DayNight, Night) - "; msg2="Колко часа от деня използвате уреда?"
+            msg1=f"В каква част от денонощието използвате уреда '{appliancesList[k]}' (Пример: Day, DayNight, Night) - "; msg2="Колко часа от деня използвате уреда?"; msg4="Колко часа от нощта използвате уреда?"
             err2=f"[Грешка]: Не може часовете да са под 0."; err3="[Грешка]: Не въведохте правилно този параметър!\n\n"
         elif lang=="EN":
-            msg1 = f"In what time of the day are you using the appliance '{appliancesList[k]}' (Example: Day, DayNight, Night) - "; msg2 = "How much hours of the day are you using the appliance?"
+            msg1 = f"In what time of the day are you using the appliance '{appliancesList[k]}' (Example: Day, DayNight, Night) - "; msg2 = "How much hours of the day are you using the appliance?"; msg4="How much hours of the night are you using the appliance?"
             err2 = f"[Error]: Hours cannot be below 0."; err3 = "[Error]: You didn't enter that parameter correctly!\n\n"
         while True:
             dayTime=input(msg1)
@@ -68,7 +68,7 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
                         hoursDay=hours
                         totalConsumption += ((appliancesList[k + 1] * hoursDay) * dayTariff)*days
                         while True:
-                            hours = int(input(msg2))
+                            hours = int(input(msg4))
                             if hours > 8:
                                 constructMessages(0, dayTime)
                                 print(err1)
@@ -82,7 +82,7 @@ def performCalculation(appliancesList, days, energySupplierCode, consumption):
                         break
             elif dayTime=="Night":
                 while True:
-                    hours=int(input(msg2))
+                    hours=int(input(msg4))
                     if hours>8:
                         constructMessages(0, dayTime)
                         print(err1)
