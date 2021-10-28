@@ -166,7 +166,6 @@ def BeginCalculation():
                 appliances.append(appliance)
                 appliances.append(totalConsumption)
 def main():
-    initConfigure()
     QuitRequested=False
     while True:
         if lang=="BG":
@@ -196,4 +195,5 @@ def main():
             continue
     if QuitRequested==True:
         return 0
+initConfigure()
 main()
