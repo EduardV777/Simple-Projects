@@ -18,7 +18,7 @@ def constructMessages(val1="", val2=0):
         global withdrawSuccess; global changePin; global changePinErr; global changePinErr2; global changePinErr3; global changePinBlocked; global changePinNew; global changePinSuccess
         if lang=="BG":
             head2="\n\n\n----Регистрация на нов банков номер----\n"
-            optionChoice="Изберете опция:\n1 (Регистрирайте нов банков номер)\n2 (Проверете съществуваща сметката)"
+            optionChoice="Изберете опция:\n1 (Регистрирайте нов банков номер)\n2 (Проверете съществуваща сметката)\n"
             regSuccess="Сметката Ви е регистрирана успешно в системата!"
             req1="Моля, въведете номера на вашата банкова сметка: "; req2="\nВъведете ПИН код: "; req3="Въведете номера на вашата нова сметка: "; req4="Въведете ПИН код за вход в системата: "
             errExists="\n\nТози банков номер вече съществува!\n\n"; errPin="\n\nПИН кодът е неправилен. ПИН кодовете са с дължина от 4 символа."; errReg="\n\nНомерът бе въведен неправилно.\nДължината на банков номер е 12 символа.\n\n"; errChoice="\n\n[ГРЕШКА]: Неправилен избор!\n\n"; err1="\n\n[ГРЕШКА]: Въведеният банков номер не е валиден.\n\n"; err2="\n\n[ГРЕШКА]: Въведеният пин за тази сметка е неправилен!\n\n"
@@ -28,16 +28,18 @@ def constructMessages(val1="", val2=0):
             changePinErr="\n\nНевалиден ПИН! (3 максимални опита)\n\n"; changePinErr2="\n\nПИН кодът трябва да се състои от 4 символа.\n\n"; changePinBlocked="\n\nВашата сметка е блокирана за 30 минути!\n\n"; changePinNew="\n\nВъведете вашият нов ПИН код(4 цифри) - "; changePinErr3="\n\nПИН кодът не може да бъде същият, като текущият Ви ПИН код!\n\n"; changePinSuccess="\n\nУспешно променихте своя ПИН!\n\n"
         elif lang=="EN":
             optionChoice = "Make a choice:\n1 (Register new bank account number)\n2 (Check an already existing bank account)"
-            req1="Please, enter the number of your bank acount: "; req2="\nEnter PIN code: "
-            errChoice="\n\n[ERROR]: Incorrect choice!\n\n"; err1 = "\n\n[ERROR]: The bank account number is invalid.\n\n"; err2 = "\n\n[ERROR]: The pin you entered is not valid for this bank account!\n\n"
-            blockedMsg = "\n\n|The bank account is temporarily suspended for 30 minutes!|"
+            req1="Please, enter the number of your bank acount: "; req2="\nEnter PIN code: "; req2="\nEnter PIN code: "; req3="Enter the number of your new bank account: "; req4="Enter PIN code to log into the system: "
+            errExists="\n\nThis bank number already exists!\n\n"; errPin="\n\nPIN code is incorrect. PIN codes have length of 4 symbols."; errReg="\n\nGiven number is incorrect.\nThe length of a bank number is 12 symbols.\n\n"; errChoice="\n\n[ERROR]: Incorrect choice!\n\n"; err1 = "\n\n[ERROR]: The bank account number is invalid.\n\n"; err2 = "\n\n[ERROR]: The pin you entered is not valid for this bank account!\n\n"
+            blockedMsg = "\n\n|The bank account is temporarily suspended for 30 minutes!|"; suspendedMsg="\n\n|Your bank account is temporarily suspended.|\n\n"
+            contrMsg = "\n\n\n\nChoose an option:\n\n[1] Check account's balance\n[2] Deposit funds to your account\n[3] Withdraw funds from your account\n[4] Change your PIN code\n[5] Log out from the system"; contrWrongOpt = "\nWrong option!\n"; balanceOutput = f"\n\nBank account number [{val1}]\n\n - Available funds ({val2} leva)\n\n[1] Resume"; depositMsg = f"Current funds in this bank account ({val2})\n\nEnter the amount of funds you want to deposit in to your account - "
+            depositErr1 = "\n\nInvalid sum!\n\n"; depositErr2 = "\n\nPlease, do this action at a bank office!"; depositProcess = "Processing transaction..."; depositSuccessful = "\n\nSuccessful transaction!\n\n";depositWithdraw = "\n\nEnter the amount of funds you want to withdraw - "; depositImpossible = "\n\nNot enough funds!\n\n"; withdrawSuccess = "\n\nSuccessful transaction!\n\n"; changePin = "Enter your current PIN code - "
+initConfig()
 def main():
-    initConfig()
     constructMessages()
     print(head)
     while True:
         choice=input(optionChoice)
-        if choice!="1" and choice!="2":
+        if choice!="1" and choice!="2" and choice!="/lang_EN":
             print(errChoice)
             continue
         else:
@@ -110,6 +112,9 @@ def main():
         if loginSuspended==True:
             loginSuspended=False
             main()
+    elif choice=="/lang_EN":
+        initConfig("EN")
+        main()
 def bankAccountControl():
     SafeGuard = False
     while True:
