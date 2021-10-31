@@ -18,21 +18,23 @@ def constructMessages(val1="", val2=0):
         global withdrawSuccess; global changePin; global changePinErr; global changePinErr2; global changePinErr3; global changePinBlocked; global changePinNew; global changePinSuccess
         if lang=="BG":
             head2="\n\n\n----Регистрация на нов банков номер----\n"
-            optionChoice="Изберете опция:\n1 (Регистрирайте нов банков номер)\n2 (Проверете съществуваща сметката)\n"
+            optionChoice="Изберете опция:\n1 (Регистрирайте нов банков номер)\n2 (Проверете съществуваща сметка)\n\n/To switch to english, enter command '/lang_EN' now./\n- "
             regSuccess="Сметката Ви е регистрирана успешно в системата!"
             req1="Моля, въведете номера на вашата банкова сметка: "; req2="\nВъведете ПИН код: "; req3="Въведете номера на вашата нова сметка: "; req4="Въведете ПИН код за вход в системата: "
             errExists="\n\nТози банков номер вече съществува!\n\n"; errPin="\n\nПИН кодът е неправилен. ПИН кодовете са с дължина от 4 символа."; errReg="\n\nНомерът бе въведен неправилно.\nДължината на банков номер е 12 символа.\n\n"; errChoice="\n\n[ГРЕШКА]: Неправилен избор!\n\n"; err1="\n\n[ГРЕШКА]: Въведеният банков номер не е валиден.\n\n"; err2="\n\n[ГРЕШКА]: Въведеният пин за тази сметка е неправилен!\n\n"
             blockedMsg="\n\n|Банковата сметка е блокирана временно за 30 минути!|\n\n"; suspendedMsg="\n\n|Банковата сметка е временно блокирана.|\n\n"
             contrMsg="\n\n\n\nИзберете опция:\n\n[1] Проверете баланса на сметката си\n[2] Депозирайте средства\n[3] Изтеглете средства\n[4] Сменете вашият ПИН код\n[5] Изход от системата"; contrWrongOpt="\nГрешна опция!\n"; balanceOutput=f"\n\nБанкова сметка номер [{val1}]\n\n - Налични средства ({val2} лева)\n\n[1] Продължи"; depositMsg=f"Текущи средства в сметката ({val2})\n\nВъведете сумата която искате да вкарате във вашата сметка - "
             depositErr1="\n\nНевалидна сума!\n\n"; depositErr2="\n\nМоля изпълнете операцията в банков клон!"; depositProcess="Обработка на транзакцията..."; depositSuccessful="\n\nУспешна транзакция!\n\n"; depositWithdraw="\n\nВъведете сумата която желаете да изтеглите - "; depositImpossible="\n\nНедостатъчна наличност!\n\n"; withdrawSuccess="\n\nУспешна транзакция!\n\n"; changePin="Въведете вашият текущ ПИН - "
-            changePinErr="\n\nНевалиден ПИН! (3 максимални опита)\n\n"; changePinErr2="\n\nПИН кодът трябва да се състои от 4 символа.\n\n"; changePinBlocked="\n\nВашата сметка е блокирана за 30 минути!\n\n"; changePinNew="\n\nВъведете вашият нов ПИН код(4 цифри) - "; changePinErr3="\n\nПИН кодът не може да бъде същият, като текущият Ви ПИН код!\n\n"; changePinSuccess="\n\nУспешно променихте своя ПИН!\n\n"
+            changePinErr="\n\nНевалиден ПИН! (3 максимални опита)\n\n"; changePinErr2="\n\nПИН кодът трябва да се състои от 4 символа.\n\n"; changePinBlocked="\n\nВашата сметка е блокирана за 30 минути!\n\n"; changePinNew="\n\nВъведете вашият нов ПИН код(4 цифри) - "; changePinErr3="\n\nПИН кодът не може да бъде същият, като текущият Ви ПИН код!\n\n"; changePinSuccess="\n\nУспешно променихте своя ПИН!\n"
         elif lang=="EN":
-            optionChoice = "Make a choice:\n1 (Register new bank account number)\n2 (Check an already existing bank account)"
+            head2 = "\n\n\n----New bank number registration----\n"
+            optionChoice = "Make a choice:\n1 (Register new bank account number)\n2 (Check an already existing bank account)\n\n/За да преминете към български език, въведете команда '/lang_BG' сега./\n- "
             req1="Please, enter the number of your bank acount: "; req2="\nEnter PIN code: "; req2="\nEnter PIN code: "; req3="Enter the number of your new bank account: "; req4="Enter PIN code to log into the system: "
             errExists="\n\nThis bank number already exists!\n\n"; errPin="\n\nPIN code is incorrect. PIN codes have length of 4 symbols."; errReg="\n\nGiven number is incorrect.\nThe length of a bank number is 12 symbols.\n\n"; errChoice="\n\n[ERROR]: Incorrect choice!\n\n"; err1 = "\n\n[ERROR]: The bank account number is invalid.\n\n"; err2 = "\n\n[ERROR]: The pin you entered is not valid for this bank account!\n\n"
             blockedMsg = "\n\n|The bank account is temporarily suspended for 30 minutes!|"; suspendedMsg="\n\n|Your bank account is temporarily suspended.|\n\n"
             contrMsg = "\n\n\n\nChoose an option:\n\n[1] Check account's balance\n[2] Deposit funds to your account\n[3] Withdraw funds from your account\n[4] Change your PIN code\n[5] Log out from the system"; contrWrongOpt = "\nWrong option!\n"; balanceOutput = f"\n\nBank account number [{val1}]\n\n - Available funds ({val2} leva)\n\n[1] Resume"; depositMsg = f"Current funds in this bank account ({val2})\n\nEnter the amount of funds you want to deposit in to your account - "
             depositErr1 = "\n\nInvalid sum!\n\n"; depositErr2 = "\n\nPlease, do this action at a bank office!"; depositProcess = "Processing transaction..."; depositSuccessful = "\n\nSuccessful transaction!\n\n";depositWithdraw = "\n\nEnter the amount of funds you want to withdraw - "; depositImpossible = "\n\nNot enough funds!\n\n"; withdrawSuccess = "\n\nSuccessful transaction!\n\n"; changePin = "Enter your current PIN code - "
+            changePinErr = "\n\nInvalid PIN! (3 tries allowed)\n\n"; changePinErr2 = "\n\nPIN code must have 4 digits.\n\n"; changePinBlocked = "\n\nYour bank account is blocked for 30 minutes.\n\n"; changePinNew = "\n\nEnter your new PIN code(4 digits) - "; changePinErr3 = "\n\nPIN code cannot be the same as your current PIN code!\n\n"; changePinSuccess = "\n\nYour PIN code has been successfully changed!\n"
 initConfig()
 def main():
     constructMessages()
@@ -178,7 +180,7 @@ def bankAccountControl():
                     else:
                         while True:
                             newPin=input(changePinNew)
-                            if newPin>4 or newPin<4:
+                            if len(newPin)>4 or len(newPin)<4:
                                 print(changePinErr2)
                                 continue
                             elif newPin==currentPin:
