@@ -12,22 +12,22 @@ def StartGame(name, difficulty, wordsList):
     accountId=AccountsData.AccountName.index(name)
     totalPoints=0; failed=False
     #creating required parameters depending on the difficulty
-    if difficulty=="Easy":
+    if difficulty=="Easy" or difficulty=="easy" or difficulty=="EASY":
         wordsCount=3
         range1=0.00; range2=0.94; range3=0.95; range4=1
         minWordLength=3; maxWordLength=4
-        winPoints=5; losePoints=10
+        winPoints=5; losePoints=10; lowerPtsPtc=0.50
         guessTries=2; maxHiddenLetters=1
-    elif difficulty=="Medium":
+    elif difficulty=="Medium" or difficulty=="medium" or difficulty=="MEDIUM":
         wordsCount=5
         range1 = 0.00; range2 = 0.70; range3 = 0.71; range4 = 1
         minWordLength=4; maxWordLength = 5
-        winPoints = 10; losePoints = 20
+        winPoints = 10; losePoints = 20; lowerPtsPtc=0.75
         guessTries = 2; maxHiddenLetters=3
-    elif difficulty=="Hard":
+    elif difficulty=="Hard" or difficulty=="hard" or difficulty=="HARD":
         wordsCount=7
         range1 = 0.00; range2 = 0.69; range3 = 0.70; range4 = 1
-        minWordLength = 6; maxWordLength = 8
+        minWordLength = 6; maxWordLength = 13
         winPoints = 30; losePoints = 60
         guessTries = 1; maxHiddenLetters=3
 
@@ -46,6 +46,7 @@ def StartGame(name, difficulty, wordsList):
     while k<wordsCount:
         chance=round(random(),2); noSuchWords=False
         if range1<=chance<=range2:
+            #length=len(shortWords)-1
             while True:
                 randomWord=round(random()*len(eligibleWords)-1)
                 if minWordLength<=len(eligibleWords[randomWord])<maxWordLength:
@@ -72,6 +73,7 @@ def StartGame(name, difficulty, wordsList):
                     continue
         k+=1
     print("Hiding letters . . .\n\n\n")
+    #print(chosenWords)
     wordN=1
     #hiding letter, displaying words to the player and processing player's answer
     for k in range(0,len(chosenWords)):
@@ -97,7 +99,7 @@ def StartGame(name, difficulty, wordsList):
             answer=input()
             if answer==originalWord:
                 print("Yes, that's correct answer!")
-                totalPoints+=winPoints
+                totalPoints+=currentWinningPts
                 wordN+=1
                 break
             else:
@@ -108,8 +110,8 @@ def StartGame(name, difficulty, wordsList):
                     if totalPoints<0:
                         totalPoints=0
                     break
-                print(f"No, that's not the word. ({triesPerWord} tries left)\nCurrent winning points have been decreased 50%")
-                currentWinningPts-=currentWinningPts*0.5
+                print(f"No, that's not the word. ({triesPerWord} tries left)\nCurrent winning points have been decreased {round(lowerPtsPtc*100)}%")
+                currentWinningPts-=currentWinningPts*lowerPtsPtc
                 continue
         if failed==True:
             break
@@ -159,7 +161,7 @@ def main():
             words=["game","global","unreal","dictionary","month","bread","spices","potato","city","car","stop","tag","skip","loud","break","turn","will","power","day","way","stay","wanderer","deal","seal","bill","drill","still","spill","water","bottle","scratch","food","station","destination","coronation","statement","presentation","intuition","premonition","consciousness","nationality","respectively","perspective","introspection","construction"]
             while True:
                 diff=input("Select Difficulty(Easy/Medium/Hard): ")
-                if diff!="Easy" and diff!="Medium" and diff!="Hard":
+                if diff!="Easy" and diff!="Medium" and diff!="Hard" and diff!="easy" and diff!="medium" and diff!="hard" and diff!="EASY" and diff!="MEDIUM" and diff!="HARD":
                     print("\nHmm, What difficulty did you choose?\n")
                     continue
                 else:
