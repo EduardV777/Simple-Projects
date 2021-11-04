@@ -46,7 +46,6 @@ def StartGame(name, difficulty, wordsList):
     while k<wordsCount:
         chance=round(random(),2); noSuchWords=False
         if range1<=chance<=range2:
-            #length=len(shortWords)-1
             while True:
                 randomWord=round(random()*len(eligibleWords)-1)
                 if minWordLength<=len(eligibleWords[randomWord])<maxWordLength:
@@ -73,7 +72,6 @@ def StartGame(name, difficulty, wordsList):
                     continue
         k+=1
     print("Hiding letters . . .\n\n\n")
-    #print(chosenWords)
     wordN=1
     #hiding letter, displaying words to the player and processing player's answer
     for k in range(0,len(chosenWords)):
