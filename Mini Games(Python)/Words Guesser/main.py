@@ -8,43 +8,105 @@ def ShowGuide():
     print("You can lose a lot more points if you get the word wrong on hard difficulty. The amount of points you lose/earn are as follows:\n\nEasy difficulty: You earn 5 points per correctly guessed word/ You lose 10 points otherwise\nMedium difficulty: You earn 10 points per correctly guessed word/ You lose 20 points otherwise.\nHard difficulty: You earn 30 points per correctly guessed word/ You lose 60 points otherwise.\n\n")
     print("And lastly, you get 2/2/1 tries per word respectively.\nHave fun and get the 1st place in leaderboards! :)\n\n")
 
-def StartGame(difficulty, wordsList):
+def StartGame(name, difficulty, wordsList):
+    accountId=AccountsData.AccountName.index(name)
+    totalPoints=0; failed=False
     if difficulty=="Easy":
-        print("Choosing words . . .")
-        shortWords=[]
-        for k in range(0,len(wordsList)):
-            if len(wordsList[k])<5:
-                shortWords.append(wordsList[k])
-        print("Hiding letters . . .")
-        chosenWords=[]; k=0
-        while k<3:
-            chance=round(random.random(),2)
-            if 0.00<=chance<0.95:
-                #length=len(shortWords)-1
-                while True:
-                    randomWord=round(random.random()*len(shortWords))
-                    if len(shortWords[randomWord])<4:
-                        chosenWords.append(shortWords[randomWord])
-                        del shortWords[randomWord]
-                        break
-                    else:
-                        continue
-            elif 0.95<=chance<=1:
-                while True:
-                    randomWord=round(random.random()%len(shortWords))
-                    if len(shortWords[randomWord])==4:
-                        chosenWords.append(shortWords[randomWord])
-                        del shortWords[randomWord]
-                        break
-                    else:
-                        continue
-            k+=1
-        #print(chosenWords)
-    """
-    if difficulty=="Medium":
-    if difficulty=="Hard":
-    """
-    UpdateAccountStats()
+        wordsCount=3
+        range1=0.00; range2=0.94; range3=0.95; range4=1
+        minWordLength=3;wordLength1=4; wordLength2=4
+        winPoints=5; losePoints=10
+        guessTries=2; maxHiddenLetters=1
+    elif difficulty=="Medium":
+        wordsCount=5
+        range1 = 0.00; range2 = 0.70; range3 = 0.71; range4 = 1
+        minWordLength=4; wordLength1 = 6; wordLength2 = 6
+        winPoints = 10; losePoints = 20
+        guessTries = 2; maxHiddenLetters=3
+    elif difficulty=="Hard":
+        wordsCount=7
+        range1 = 0.00; range2 = 0.70; range3 = 0.71; range4 = 1
+        minWordLength = 6; wordLength1 = 9; wordLength2 = 9
+        winPoints = 30; losePoints = 60
+        guessTries = 1; maxHiddenLetters=3
+    print("Choosing words . . .")
+    shortWords=[]
+    for k in range(0,len(wordsList)):
+        if len(wordsList[k])<wordLength2+1:
+            shortWords.append(wordsList[k])
+    chosenWords=[]; k=0
+    while k<wordsCount:
+        chance=round(random.random(),2)
+        if range1<=chance<=range2:
+            #length=len(shortWords)-1
+            while True:
+                randomWord=round(random.random()*len(shortWords)-1)
+                if minWordLength<=len(shortWords[randomWord])<wordLength1:
+                    chosenWords.append(shortWords[randomWord])
+                    del shortWords[randomWord]
+                    break
+                else:
+                    continue
+        elif range3<=chance<=range4:
+            while True:
+                randomWord=round(random.random()%len(shortWords))
+                if len(shortWords[randomWord])==wordLength2:
+                    chosenWords.append(shortWords[randomWord])
+                    del shortWords[randomWord]
+                    break
+                else:
+                    continue
+        k+=1
+    print("Hiding letters . . .\n\n\n")
+    #print(chosenWords)
+    wordN=1
+    for k in range(0,len(chosenWords)):
+        originalWord=chosenWords[k]; triesPerWord=guessTries
+        currentWord=[]; hideLetters=maxHiddenLetters; h=0
+        for j in range(0,len(chosenWords[k])):
+            currentWord.append(chosenWords[k][j])
+        if maxHiddenLetters>1 and difficulty!="Hard":
+            hideChance=round(random.random())
+            if 0.01<hideChance:
+                hideLetters-=1
+        while h<hideLetters:
+            hideRandLetter=round(random.random()*len(currentWord)-1)
+            if currentWord[hideRandLetter]=="_" or hideRandLetter==0:
+                continue
+            else:
+                currentWord[hideRandLetter]="_"
+                h+=1
+        currentWord="".join(currentWord); currentWinningPts=winPoints; currentLosePts=losePoints
+        print(f"\n\nWord number №{wordN}:\n")
+        print(currentWord)
+        while triesPerWord!=0:
+            answer=input()
+            if answer==originalWord:
+                print("Yes, that's correct answer!")
+                totalPoints+=winPoints
+                wordN+=1
+                break
+            else:
+                triesPerWord-=1
+                if triesPerWord==0:
+                    failed=True
+                    totalPoints-=currentLosePts
+                    if totalPoints<0:
+                        totalPoints=0
+                    break
+                print(f"No, that's not the word. ({triesPerWord} tries left)\nCurrent winning points have been decreased 50%")
+                currentWinningPts-=currentWinningPts*0.5
+                continue
+        if failed==True:
+            break
+    if failed==False:
+        print(f"You guessed all words correctly!\nEarned points={totalPoints}")
+        AccountsData.AccountPoints[accountId]+=totalPoints
+        UpdateAccountStats()
+    else:
+        print(f"You couldn't guess all the words.\nEarned points={totalPoints}")
+        if totalPoints>0:
+            AccountsData.AccountPoints[accountId]+=totalPoints
 def UpdateAccountStats():
     k=0
     while k<len(AccountsData.AccountPoints)-1:
@@ -89,7 +151,7 @@ def main():
                     continue
                 else:
                     break
-            StartGame(diff, words)
+            StartGame(name, diff, words)
         elif option=="2":
             ShowAccountStats(name)
             continue
