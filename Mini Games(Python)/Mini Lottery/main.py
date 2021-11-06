@@ -1,5 +1,5 @@
 import mysql.connector; import time
-def ControlPanel(name, accId):
+def ControlPanel(name, accId, DbConnectionInfo):
     queryExecution.execute(f"Select accountBalance from accountstats where accountId='{accId}'")
     queryRes=queryExecution.fetchone()
     balance=queryRes[0]
@@ -17,7 +17,7 @@ def ControlPanel(name, accId):
         if option=="1":
             pass
         elif option=="2":
-            print(f"Stats for account ID[{accId}]:\nTotal Played Games - {currentAccountStats.playedGamesTotal}\nTotal Won Games - {currentAccountStats.wonGamesTotal}\nTotal Lost Games - {currentAccountStats.lostGamesTotal}")
+            print(f"Stats for account ID[{accId}]:\nTotal Played Games - {currentAccountStats.playedGamesTotal}\nTotal Won Games - {currentAccountStats.wonGamesTotal}\nTotal Lost Games - {currentAccountStats.lostGamesTotal}\n\n")
             continue
         elif option=="3":
             while True:
@@ -48,7 +48,7 @@ def ControlPanel(name, accId):
                     if changeOption=='changePass':
                         while True:
                             currentPass=input("Enter your current password: ")
-                            queryExecution.execute(f"Select accountPassword from accounts where accountdId={accId}")
+                            queryExecution.execute(f"Select accountPassword from accounts where accountId={accId}")
                             queryRes=queryExecution.fetchone()
                             realCurrentPass=queryRes[0]
                             if currentPass!=realCurrentPass:
@@ -57,25 +57,55 @@ def ControlPanel(name, accId):
                             else:
                                 while True:
                                     newPass=input("Enter your new password: ")
-                                    if newPass<5:
+                                    if len(newPass)<5:
                                         print("\nPassword is too short! It must be at least 5 symbols long.\n")
                                         continue
-                                    elif newPass>20:
+                                    elif len(newPass)>20:
                                         print("\nPassword is too long! It must be below 20 symbols length.\n")
                                         continue
                                     else:
+                                        queryExecution.execute(f"Update accounts set accountPassword={newPass} where accountId={accId} limit 1")
+                                        DbConnectionInfo.commit()
                                         print("\nYou have changed your password successfully!\n")
                                         break
                                 break
                     elif changeOption=="changeName":
-                        pass
+                        while True:
+                            currentPass=input("Enter your current password: ")
+                            queryExecution.execute(f"Select accountPassword from accounts where accountId={accId}")
+                            queryRes=queryExecution.fetchone()
+                            if currentPass!=queryRes[0]:
+                                print("\nIncorrect password!\n")
+                            else:
+                                while True:
+                                    newName=input("New Account Name: ")
+                                    if len(newName)<4:
+                                        print("\nYour account name must be at least 4 symbols.\n")
+                                        continue
+                                    elif len(newName)>10:
+                                        print("\nYour account name should not exceed 10 symbols length.\n")
+                                        continue
+                                    else:
+                                        currentAccountStats.accName=newName
+                                        queryExecution.execute(f"Update accounts set accountName='{newName}' where accountId={accId} limit 1")
+                                        DbConnectionInfo.commit()
+                                        print("\nYour account name has been successfully changed!\n")
+                                        break
+                                break
                     elif changeOption=="4":
-                        break
+                        continue
+                elif controlOption=="4":
+                    break
             continue
         elif option=="4":
             pass
         elif option=="5":
-            pass
+            print("\nLogging you off . . .\n")
+            queryExecution.execute(f"Update accountstats set accountBalance={currentAccountStats.accBalance}, playedGames=playedGames+{currentAccountStats.currentlyPlayedGames}, wonGames=wonGames+{currentAccountStats.currentlyWonGames}, lostGames=lostGames+{currentAccountStats.currentlyLostGames} where accountId={accId}")
+            DbConnectionInfo.commit()
+            del accId; del name
+            main()
+            break
         else:
             continue
 def LogIntoAccount(dbConnectionInfo):
@@ -115,7 +145,7 @@ def CreateAccount(dbConnectionInfo):
     while True:
         accName=input("Account Name: ")
         if len(accName)<4:
-            print("\nYour account name must be atleast 4 symbols\n")
+            print("\nYour account name must be at least 4 symbols\n")
             continue
         elif len(accName)>10:
             print("\nYour account name must not be over 10 symbols\n")
@@ -147,8 +177,8 @@ def main():
     except:
         print("[ERROR]: Failure connecting to database! Shutting down. . .\n         Report the problem at the developer's website\n")
         return 0
-    timeTest=time.gmtime()
-    print(timeTest)
+    #timeTest=time.gmtime()
+    #print(timeTest)
     while True:
         try:
             option=int(input("1 - Create a local account | 2 - Log in account\n -- "))
@@ -182,5 +212,5 @@ def main():
                 break
             else:
                 k+=1
-        ControlPanel(userName, accountId)
+        ControlPanel(userName, accountId, database)
 main()
