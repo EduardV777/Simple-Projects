@@ -1,4 +1,4 @@
-import mysql.connector; import time
+import mysql.connector; import time; import random
 def ControlPanel(name, accId, DbConnectionInfo):
     queryExecution.execute(f"Select accountBalance from accountstats where accountId='{accId}'")
     queryRes=queryExecution.fetchone()
@@ -21,7 +21,7 @@ def ControlPanel(name, accId, DbConnectionInfo):
             continue
         elif option=="3":
             while True:
-                controlOption=input("\nEnter '1' if you wish to withdraw money from your current BetCoin balance\nEnter '2' if you wish to deposit funds into your BetCoin balance\nEnter '3' if you want to change your name/password\n\n[4]Return")
+                controlOption=input("\nEnter '1' if you wish to withdraw money from your current BetCoin balance\nEnter '2' if you wish to deposit funds into your BetCoin balance\nEnter '3' if you want to change your name/password\n\n[4]Return\n- ")
                 if controlOption=="1":
                     print(f"Your current BetCoin balance is: {currentAccountStats.accBalance}\nEnter the amount of money you'd like to withdraw:\n")
                     withdrawAmount=float(input("- "))
@@ -98,7 +98,59 @@ def ControlPanel(name, accId, DbConnectionInfo):
                     break
             continue
         elif option=="4":
-            pass
+            while True:
+                choice=input("Try:\n[1]F.A.Q\n[2]Report a bug\n\n[4]Return\n- ")
+                if choice=="1":
+                    print("\n||Frequently Asked Questions||\n1. The game system can't startup and I get 'Failure connecting to the database' error. Why is that happening?\n-- Sometimes we are performing technical checks on our database and game system. We will usually post a notice about them before we take the server offline, but there could be cases when emergency shutdown is required to fix any problems that have arisen during the work of our server infrastructure.\nIn case you have a problem and we didn't post any notices, contact us through the report system.\n\n \n\n[4] Return\n")
+                    while True:
+                        userInput=input("-- ")
+                        if userInput=="4" or not userInput=="4":
+                            break
+                elif choice=="2":
+                    print("What kind of issue are your experiencing? Write down one of the following\n([1] - Login Issue, [2] - Registration issue, [3] - Account control issue, [4] - Slow/Failing transactions, [5] - Lottery bug\n")
+                    while True:
+                        issueCategory=""
+                        issueCode=input("- ")
+                        if issueCode=="1":
+                            issueCategory="Login"
+                            break
+                        elif issueCode=="2":
+                            issueCategory="Registration"
+                            break
+                        elif issueCode=="3":
+                            issueCategory="Account Control"
+                            break
+                        elif issueCode=="4":
+                            issueCategory="Transaction problem"
+                            break
+                        elif issueCode=="5":
+                            issueCategory="Game bug"
+                            break
+                        else:
+                            print("\nUnrecognised option!\n")
+                            continue
+                    print("Write detailed description of the problem you are experiencing(2000 max. symbols):\n")
+                    while True:
+                        problemDesc=input("- ")
+                        if len(problemDesc)>2000:
+                            print(problemDesc)
+                            print("\n2000 characters exceeded! Cannot send report. You can copy and shorten you report above.\n\n")
+                            continue
+                        else:
+                            queryExecution.execute("SELECT reportId from bugreports")
+                            existingIds=queryExecution.fetchall()
+                            reportId=round(random.random()*(1000*1000))
+                            for k in range(0,len(existingIds)):
+                                if reportId==existingIds[k]:
+                                    reportId=reportId//1+random.random()*15
+                            currentTime=time.gmtime()
+                            reportTime=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+                            queryExecution.execute(f"INSERT into bugreports VALUES({accId}, {reportId}, \"{problemDesc}\", '{reportTime}', '{issueCategory}')")
+                            DbConnectionInfo.commit()
+                            print("\nReport sent!\nWe will review the information you sent us and contact you within 48 hours.\nFeel free to contact us if you experience any other problems.\n\n")
+                            break
+                elif choice=="4":
+                    break
         elif option=="5":
             print("\nLogging you off . . .\n")
             queryExecution.execute(f"Update accountstats set accountBalance={currentAccountStats.accBalance}, playedGames=playedGames+{currentAccountStats.currentlyPlayedGames}, wonGames=wonGames+{currentAccountStats.currentlyWonGames}, lostGames=lostGames+{currentAccountStats.currentlyLostGames} where accountId={accId}")
@@ -196,21 +248,10 @@ def main():
             continue
     if successfullLogin==True:
         queryExecution.execute(f"Select accountId from accounts where accountName='{userName}'")
-        global accountId; accountId=""
+        global accountId
         queryRes=queryExecution.fetchone()
         k=0
         #take actual id from query result
-        while k<len(queryRes):
-            if k!="(" or k!=",":
-                for j in range(k,len(queryRes)):
-                    if queryRes[j]!=",":
-                        accountId+=str(queryRes[j])
-                        k+=1
-                    else:
-                        k+=1
-                        break
-                break
-            else:
-                k+=1
+        accountId=queryRes[0]
         ControlPanel(userName, accountId, database)
 main()
