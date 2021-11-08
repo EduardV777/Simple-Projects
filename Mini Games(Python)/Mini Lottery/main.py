@@ -1,4 +1,80 @@
 import mysql.connector; import time; import random
+def PlayGame(gameMode, playerBalance):
+    quit=False
+    if gameMode=="1":
+        amountNumbers=6; highLimit=49
+    selection=[]
+    k=0; sameNumbersDetected=False
+    while k<amountNumbers:
+        while True:
+            num=input(f"Choose number {k+1}: ")
+            num=int(num)
+            if k!=0:
+                for j in range(0,len(selection)):
+                    if num==selection[j]:
+                        sameNumbersDetected=True
+                        print("\nYou already have that number in your selection!\n")
+                        break
+            if sameNumbersDetected==True:
+                sameNumbersDetected=False
+                continue
+            else:
+                if 1 <= num <= highLimit:
+                    selection.append(num)
+                    k += 1
+                else:
+                    print("\nNumbers in this game are between 1 and 45\n")
+                    continue
+                break
+    while True:
+        print(f"\nYour selection:\n")
+        selectionOutput=""
+        for i in range(0,len(selection)):
+            if i == len(selection) - 1:
+                selectionOutput+=str(selection[i])
+            else:
+                selectionOutput += str(selection[i])+","
+
+        print(selectionOutput)
+        print("\nDo you want to proceed, change a number in your selection or return?\n")
+        while True:
+            userChoice=input("- ")
+            if userChoice=="Proceed" or userChoice=="proceed":
+                print("\nProceeding . . .\n")
+            elif userChoice=="Change" or userChoice=="change":
+                while True:
+                    whichNum=input("Which number do you want to change?\n- ")
+                    whichNum=int(whichNum)
+                    for k in range(0,len(selection)):
+                        if whichNum==selection[k]:
+                            while True:
+                                num=input(f"Choose new number {k+1}: ")
+                                num=int(num)
+                                if 1<=num<=highLimit:
+                                    for j in range(0,len(selection)):
+                                        if num==selection[j]:
+                                            print("\nYou have that number already in your selection.\n")
+                                            sameNumbersDetected=True
+                                            break
+                                else:
+                                    print("\nNumber must be between 1 and 45\n")
+                                    continue
+                                if sameNumbersDetected==True:
+                                    sameNumbersDetected=False
+                                    continue
+                                else:
+                                    selection[k]=num
+                                    break
+                            break
+                    break
+                break
+            elif userChoice=="Return" or userChoice=="return":
+                quit=True; break
+            else:
+                continue
+        if quit==True:
+            return playerBalance
+
 def ControlPanel(name, accId, DbConnectionInfo):
     queryExecution.execute(f"Select accountBalance from accountstats where accountId='{accId}'")
     queryRes=queryExecution.fetchone()
@@ -15,9 +91,23 @@ def ControlPanel(name, accId, DbConnectionInfo):
         print("1 - Bet   2 - Check account stats\n3 - Account operations   4 - Support\n5 - Log off")
         option=input("\n- ")
         if option=="1":
-            pass
+            print("What game do you want to bet on?\n1. 6/49\n2. 6/45\n3. 5/35\n")
+            while True:
+                gameMode=input("- ")
+                if gameMode=="1":
+                    print("\nYou have selected 6/49.\n")
+                    res=PlayGame(gameMode,currentAccountStats.accBalance)
+                    currentAccountStats.accBalance=res
+                    break
+                elif gameMode=="2":
+                    print("\nYou have selected 6/45\n")
+                    PlayGame(gameMode)
+                elif gameMode=="3":
+                    print("\nYou have selected 5/35\n")
+                    PlayGame(gameMode)
+
         elif option=="2":
-            print(f"Stats for account ID[{accId}]:\nTotal Played Games - {currentAccountStats.playedGamesTotal}\nTotal Won Games - {currentAccountStats.wonGamesTotal}\nTotal Lost Games - {currentAccountStats.lostGamesTotal}\n\n")
+            print(f"Stats for account ID[{accId}]:\n\nTotal Played Games - {currentAccountStats.playedGamesTotal}\nTotal Won Games - {currentAccountStats.wonGamesTotal}\nTotal Lost Games - {currentAccountStats.lostGamesTotal}\nCurrent Balance: {currentAccountStats.accBalance} BetCoins\n\n")
             continue
         elif option=="3":
             while True:
@@ -160,6 +250,7 @@ def ControlPanel(name, accId, DbConnectionInfo):
             break
         else:
             continue
+
 def LogIntoAccount(dbConnectionInfo):
     global successfullLogin
     successfullLogin=False
@@ -250,8 +341,6 @@ def main():
         queryExecution.execute(f"Select accountId from accounts where accountName='{userName}'")
         global accountId
         queryRes=queryExecution.fetchone()
-        k=0
-        #take actual id from query result
         accountId=queryRes[0]
         ControlPanel(userName, accountId, database)
 main()
