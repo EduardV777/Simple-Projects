@@ -403,11 +403,9 @@ def main():
     except:
         print("[ERROR]: Failure connecting to database! Shutting down. . .\n         Report the problem at the developer's website\n")
         return 0
-    #timeTest=time.gmtime()
-    #print(timeTest)
     while True:
         try:
-            option=int(input("1 - Create a local account | 2 - Log in account\n -- "))
+            option=int(input("1 - Create account | 2 - Log in account\n -- "))
             if option==1:
                 CreateAccount(database)
                 continue
