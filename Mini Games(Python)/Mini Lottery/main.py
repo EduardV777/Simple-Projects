@@ -1,8 +1,13 @@
 import mysql.connector; import time; import random
+
 def PlayGame(gameMode, playerBalance):
     quit=False
     if gameMode=="1":
-        amountNumbers=6; highLimit=49
+        amountNumbers=6; highLimit=49; jackpotAmount=100000
+    elif gameMode=="2":
+        amountNumbers=6; highLimit=45; jackpotAmount=75000
+    elif gameMode=="3":
+        amountNumbers=5; highLimit=35; jackpotAmount=25000
     selection=[]
     k=0; sameNumbersDetected=False
     while k<amountNumbers:
@@ -23,7 +28,7 @@ def PlayGame(gameMode, playerBalance):
                     selection.append(num)
                     k += 1
                 else:
-                    print("\nNumbers in this game are between 1 and 45\n")
+                    print(f"\nNumbers in this game are between 1 and {highLimit}\n")
                     continue
                 break
     while True:
@@ -40,7 +45,57 @@ def PlayGame(gameMode, playerBalance):
         while True:
             userChoice=input("- ")
             if userChoice=="Proceed" or userChoice=="proceed":
-                print("\nProceeding . . .\n")
+                print("\nProceeding . . .\n\nHow much BetCoins would you like to bet?\n")
+                while True:
+                    bet=float(input("Bet: \n\n"))
+                    if bet>playerBalance:
+                        print(f"\nYour bet exceeds your maximum balance ({playerBalance})\n")
+                        continue
+                    else:
+                        playerBalance-=bet
+                        break
+                generatedNumbers=[]
+                k=0; rep=False; guessedNumbers=0;
+                while k<amountNumbers:
+                    genNum=round(1+random.random()*(highLimit+1))
+                    if len(generatedNumbers)>0:
+                        for j in range(0,len(generatedNumbers)):
+                            if genNum==generatedNumbers[j]:
+                                rep=True
+                                break
+                        if rep==True:
+                            rep=False
+                            continue
+                    generatedNumbers.append(genNum)
+                    k+=1
+                print(generatedNumbers)
+                for k in range(0,len(selection)):
+                    for j in range(0,len(generatedNumbers)):
+                        if selection[k]==generatedNumbers[j]:
+                            guessedNumbers+=1
+                if guessedNumbers==amountNumbers:
+                    won=True; quit=True
+                    print(f"\n\n\n\n\n\n\nYOU WON THE JACKPOT!!!\n***Winnings: {jackpotAmount} BetCoins***")
+                    winnings=jackpotAmount
+                    playerBalance+=winnings
+                    print(f"You guessed {guessedNumbers} numbers.\nYour initial bet: {bet}\nYour winnings: {winnings}\n")
+                    break
+                else:
+                    quit = True
+                    if guessedNumbers==3:
+                        winnings=bet+0.50
+                        playerBalance += winnings
+                    elif guessedNumbers==4:
+                        winnings=bet+(bet*0.20)
+                        playerBalance+=winnings
+                    elif guessedNumbers==5:
+                        winnings=bet+(bet*0.50)
+                        playerBalance+=winnings
+                    else:
+                        winnings=0
+                    print(f"You guessed {guessedNumbers} numbers.\nYour initial bet: {bet}\nYour winnings: {winnings}\n")
+                    break
+
             elif userChoice=="Change" or userChoice=="change":
                 while True:
                     whichNum=input("Which number do you want to change?\n- ")
@@ -57,7 +112,7 @@ def PlayGame(gameMode, playerBalance):
                                             sameNumbersDetected=True
                                             break
                                 else:
-                                    print("\nNumber must be between 1 and 45\n")
+                                    print(f"\nNumber must be between 1 and {highLimit}\n")
                                     continue
                                 if sameNumbersDetected==True:
                                     sameNumbersDetected=False
@@ -74,6 +129,7 @@ def PlayGame(gameMode, playerBalance):
                 continue
         if quit==True:
             return playerBalance
+        return playerBalance
 
 def ControlPanel(name, accId, DbConnectionInfo):
     queryExecution.execute(f"Select accountBalance from accountstats where accountId='{accId}'")
@@ -91,21 +147,43 @@ def ControlPanel(name, accId, DbConnectionInfo):
         print("1 - Bet   2 - Check account stats\n3 - Account operations   4 - Support\n5 - Log off")
         option=input("\n- ")
         if option=="1":
-            print("What game do you want to bet on?\n1. 6/49\n2. 6/45\n3. 5/35\n")
-            while True:
-                gameMode=input("- ")
-                if gameMode=="1":
-                    print("\nYou have selected 6/49.\n")
-                    res=PlayGame(gameMode,currentAccountStats.accBalance)
-                    currentAccountStats.accBalance=res
-                    break
-                elif gameMode=="2":
-                    print("\nYou have selected 6/45\n")
-                    PlayGame(gameMode)
-                elif gameMode=="3":
-                    print("\nYou have selected 5/35\n")
-                    PlayGame(gameMode)
-
+            if currentAccountStats.accBalance>0:
+                print("What game do you want to bet on?\n1. 6/49\n2. 6/45\n3. 5/35\n")
+                while True:
+                    gameMode=input("- ")
+                    if gameMode=="1":
+                        print("\nYou have selected 6/49.\n")
+                        res=PlayGame(gameMode,currentAccountStats.accBalance)
+                        currentAccountStats.accBalance=res
+                        if res==100000:
+                            currentAccountStats.currentlyWonGames+=1
+                        else:
+                            currentAccountStats.currentlyLostGames+=1
+                        currentAccountStats.currentlyPlayedGames+=1
+                        break
+                    elif gameMode=="2":
+                        print("\nYou have selected 6/45\n")
+                        res=PlayGame(gameMode,currentAccountStats.accBalance)
+                        currentAccountStats.accBalance = res
+                        if res == 100000:
+                            currentAccountStats.currentlyWonGames += 1
+                        else:
+                            currentAccountStats.currentlyLostGames += 1
+                        currentAccountStats.currentlyPlayedGames += 1
+                        break
+                    elif gameMode=="3":
+                        print("\nYou have selected 5/35\n")
+                        res=PlayGame(gameMode,currentAccountStats.accBalance)
+                        currentAccountStats.accBalance = res
+                        if res == 100000:
+                            currentAccountStats.currentlyWonGames += 1
+                        else:
+                            currentAccountStats.currentlyLostGames += 1
+                        currentAccountStats.currentlyPlayedGames += 1
+                        break
+            else:
+                print("\nInsufficient BetCoin balance!\n")
+                continue
         elif option=="2":
             print(f"Stats for account ID[{accId}]:\n\nTotal Played Games - {currentAccountStats.playedGamesTotal}\nTotal Won Games - {currentAccountStats.wonGamesTotal}\nTotal Lost Games - {currentAccountStats.lostGamesTotal}\nCurrent Balance: {currentAccountStats.accBalance} BetCoins\n\n")
             continue
@@ -118,6 +196,8 @@ def ControlPanel(name, accId, DbConnectionInfo):
                     if withdrawAmount>currentAccountStats.accBalance:
                         print("\nInsufficient funds!\n")
                         break
+                    elif withdrawAmount==0:
+                        print("\nYou can't withdraw 0 BetCoins\n")
                     else:
                         currentAccountStats.accBalance-=withdrawAmount
                         print("Operation completed!")
@@ -126,8 +206,10 @@ def ControlPanel(name, accId, DbConnectionInfo):
                     print("Enter the amount of money you'd like to deposit into your account:\n")
                     depositAmount=float(input("- "))
                     if depositAmount>10000:
-                        print("\nSorry, deposits are limited to 10 000\n")
+                        print("\nSorry, deposits are limited to 10 000 USD\n")
                         break
+                    elif depositAmount==0:
+                        print("\nYou can't deposit 0 USD\n")
                     else:
                         currentAccountStats.accBalance+=depositAmount
                         print("\nOperation completed!\n")
@@ -282,7 +364,7 @@ def LogIntoAccount(dbConnectionInfo):
             except:
                 print("\nLogin data incorrect!\n")
                 continue
-    #print(queryRes)
+
 def CreateAccount(dbConnectionInfo):
     print("\n||Account creation||\n\n**Every new account now gets free 20 BetCoins to help your luck at getting amazing rewards!**\n")
     while True:
@@ -312,6 +394,7 @@ def CreateAccount(dbConnectionInfo):
     queryExecution.execute("INSERT INTO accountStats(playedGames,wonGames,lostGames) VALUES(0,0,0)")
     dbConnectionInfo.commit()
     print("\nAccount successfully created!\n")
+
 def main():
     #connect to DB
     hostAddress="localhost"; adminAccessName="accountControl"; adminAccessPass="control"; db="accountdata"
