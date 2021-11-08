@@ -1,0 +1,7 @@
+CREATE TABLE bugreports (
+accountId INT NOT NULL,
+reportId INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+reportText VARCHAR(2000) NOT NULL,
+reportDateTime VARCHAR(20) NOT NULL,
+issueCategory VARCHAR(20) NOT NULL
+);
