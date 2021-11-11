@@ -1,8 +1,20 @@
-import mysql.connector; import time; import hashlib
+import mysql.connector; import time; import hashlib; import random
 global db_connection; global queryExecutor; global loginStatus
 loginStatus=False
 db_connection=mysql.connector.connect(host="localhost", user="admin", password="admin", database="cardealership"); queryExecutor=db_connection.cursor()
 
+def listCurrentCarOffers():
+    currentTime=time.localtime()
+    print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
+    queryExecutor.execute("SELECT * from offerpostings")
+    offers=queryExecutor.fetchall()
+    offer="№: / By: / Offer id: / Title: / Description: / Type: / Fuel Type: / Drive Type: / Production Year: / Posted:\n\n"
+    for k in range(0,len(offers)):
+        offer+=str(k+1)+" | "
+        for j in range(0,len(offers[k])):
+            offer+=str(offers[k][j])+" | "
+        offer+="\n---------------------------------------------------------------------------------------------------\n\n№: / By: / Offer id: / Title: / Description: / Type: / Fuel Type: / Drive Type: / Production Year: / Posted:\n\n"
+    print(offer)
 def RegisterAccount():
     while True:
         username=input("Select a username for your account: ")
@@ -48,9 +60,9 @@ def RegisterAccount():
         else:
             break
     currentTime=time.gmtime()
-    queryExecutor.execute(f"INSERT INTO accounts(username,PASSWORD,email) VAlUES('{username}','{passwordCrypted}','{email}');")
+    queryExecutor.execute(f"INSERT INTO accounts(username,PASSWORD,email, dateCreated) VAlUES('{username}','{passwordCrypted}','{email}','{currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year}');")
     db_connection.commit()
-    print(f"\nYour account with username '{username} has been created! You can now log in.'\n")
+    print(f"\nYour account with username '{username}' has been created! You can now log in.\n")
     return 0
 
 def LogInAcc():
@@ -119,8 +131,7 @@ def main():
     while True:
         option=input("- ")
         if option=="1":
-            pass
-            #listCurrentOffers()
+            listCurrentCarOffers()
         elif option=="2":
             pass
         elif option=="3":
