@@ -4,17 +4,152 @@ loginStatus=False
 db_connection=mysql.connector.connect(host="localhost", user="admin", password="admin", database="cardealership"); queryExecutor=db_connection.cursor()
 
 def listCurrentCarOffers():
+    def SpecificOfferChoice(sellerName):
+        while True:
+            choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Return\n - ")
+            if choice=="1":
+                a=round(1+random.random()*11); b=round(1+random.random()*11); res=a+b
+                print(f"Confirm you are human: {a}+{b}=?")
+                calc=input("- ")
+                if int(calc)!=res:
+                    print("\nUnsuccessful validation\n")
+                    continue
+                else:
+                    queryExecutor.execute(f"SELECT email FROM accounts where username='{sellerName}'")
+                    email=queryExecutor.fetchone()
+                    print(f"Contact information for seller:\nE-mail: {email[0]}\n[1] - Contact | [2] - Return")
+                    while True:
+                        userContactChoice=input(" - ")
+                        if userContactChoice=="1":
+                            print("----Contact Form----\nTitle:")
+                            title=input("- ")
+                            print("Message:")
+                            message=input("- ")
+
+            elif choice=="2":
+                pass
+            elif choice=="3":
+                return 0
     currentTime=time.localtime()
     print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
-    queryExecutor.execute("SELECT * from offerpostings")
+    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType, offerpostings.yearProd from accounts, offerpostings WHERE accounts.id=offerpostings.accountId limit 15")
     offers=queryExecutor.fetchall()
     offer="№: / By: / Offer id: / Title: / Description: / Type: / Fuel Type: / Drive Type: / Production Year: / Posted:\n\n"
     for k in range(0,len(offers)):
         offer+=str(k+1)+" | "
         for j in range(0,len(offers[k])):
             offer+=str(offers[k][j])+" | "
-        offer+="\n---------------------------------------------------------------------------------------------------\n\n№: / By: / Offer id: / Title: / Description: / Type: / Fuel Type: / Drive Type: / Production Year: / Posted:\n\n"
+        if k!=len(offers)-1:
+            offer+="\n---------------------------------------------------------------------------------------------------\n\n№: / By: / Offer id: / Title: / Description: / Type: / Fuel Type: / Drive Type: / Production Year: / Posted:\n\n"
+    offer+="\n"
     print(offer)
+    offersList=[]; j=0
+    for k in range(0,15):
+        if j==len(offers):
+            break
+        offersList.append(offers[k])
+        j+=1
+    print("[1-15]Select a specific offer for more details\n'Return' to return to main menu")
+    while True:
+        usrChoice=input(": ")
+        if usrChoice=="1":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+            SpecificOfferChoice(offersList[int(usrChoice)-1][0])
+            del offerOutput
+        elif usrChoice=="2":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+            SpecificOfferChoice(offersList[int(usrChoice) - 1][0])
+            del offerOutput
+        elif usrChoice=="3":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+            SpecificOfferChoice(offersList[int(usrChoice) - 1][0])
+            del offerOutput
+        elif usrChoice=="4":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+            SpecificOfferChoice(offersList[int(usrChoice) - 1][0])
+            del offerOutput
+        elif usrChoice=="5":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="6":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="7":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="8":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="9":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="10":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="11":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="12":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="13":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="14":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
+        elif usrChoice=="15":
+            offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+            for k in range(0, len(offersList[int(usrChoice) - 1])):
+                offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
+                j += 1
+            print(offerOutput)
 def RegisterAccount():
     while True:
         username=input("Select a username for your account: ")
@@ -24,11 +159,13 @@ def RegisterAccount():
         else:
             break
     while True:
+        failedStep = False
         password=input("Create a password for your account: ")
         if len(password)<5:
             print("\nPassword must be over 4 symbols\n")
+            continue
         else:
-            attempts=0; failedStep=False
+            attempts=0
             while True:
                 if attempts==3:
                     failedStep=True
@@ -89,7 +226,7 @@ def LogInAcc():
                 id=0
                 print("\nIncorrect login credentials.\n")
         except:
-            print("\nIncorrect login credentials. VA\n")
+            print("\nIncorrect login credentials.\n")
             continue
     if len(username)==0 or id==0:
         queryExecutor.execute(f"SELECT username from accounts where username='{usernameOrEmail}' LIMIT 1")
