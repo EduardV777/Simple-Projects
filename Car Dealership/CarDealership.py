@@ -4,32 +4,57 @@ loginStatus=False
 db_connection=mysql.connector.connect(host="localhost", user="admin", password="admin", database="cardealership"); queryExecutor=db_connection.cursor()
 
 def listCurrentCarOffers():
-    def SpecificOfferChoice(sellerName):
-        while True:
-            choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Return\n - ")
-            if choice=="1":
-                a=round(1+random.random()*11); b=round(1+random.random()*11); res=a+b
-                print(f"Confirm you are human: {a}+{b}=?")
-                calc=input("- ")
-                if int(calc)!=res:
-                    print("\nUnsuccessful validation\n")
-                    continue
-                else:
-                    queryExecutor.execute(f"SELECT email FROM accounts where username='{sellerName}'")
-                    email=queryExecutor.fetchone()
-                    print(f"Contact information for seller:\nE-mail: {email[0]}\n[1] - Contact | [2] - Return")
-                    while True:
-                        userContactChoice=input(" - ")
-                        if userContactChoice=="1":
-                            print("----Contact Form----\nTitle:")
-                            title=input("- ")
-                            print("Message:")
-                            message=input("- ")
+    def SpecificOfferChoice(sellerName,offerId,accId):
+        def ProcessOrder(user,accountId,offerId):
+            print("\nProcessing order...\n")
+            currentTime=time.localtime()
+            queryExecutor.execute(f"SELECT * FROM offerpostings WHERE offerId={offerId} AND accountId={accId}")
+            offerChoice=queryExecutor.fetchone()
+            queryExecutor.execute(f"INSERT INTO userorders VALUES({accountId},{offerId},'{offerChoice[0][2]}','{offerChoice[0][3]}','{offerChoice[0][4]}','{offerChoice[0][5]}','{offerChoice[0][6]}','{offerChoice[0][7]}','{offerChoice[0][8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING',{offerChoice[0][0]},'Waiting for seller response')")
+            queryExecutor.execute(f"UPDATE myoffers SET status='Ordered' WHERE accountId={accId} AND offerId={offerId}")
+            db_connection.commit()
+            print("Order placed successfully!")
 
-            elif choice=="2":
-                pass
-            elif choice=="3":
-                return 0
+        if loginStatus==False:
+            print("You can't view any additional information about this user and their offer, unless you log in your account.")
+            print("Proceed?")
+            proceed=input("- ")
+        else:
+            while True:
+                choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Order Now\n[4] - Return ")
+                if choice=="1":
+                    a=round(1+random.random()*11); b=round(1+random.random()*11); res=a+b
+                    print(f"Confirm you are human: {a}+{b}=?")
+                    calc=input("- ")
+                    if int(calc)!=res:
+                        print("\nUnsuccessful validation\n")
+                        continue
+                    else:
+                        queryExecutor.execute(f"SELECT email FROM accounts where username='{sellerName}'")
+                        email=queryExecutor.fetchone()
+                        print(f"Contact information for seller:\nE-mail: {email[0]}\n[1] - Contact | [2] - Return")
+                        while True:
+                            userContactChoice=input(" - ")
+                            if userContactChoice=="1":
+                                print("----Contact Form----\nTitle:")
+                                title=input("- ")
+                                print("Message:")
+                                message=input("- ")
+                            elif userContactChoice=="2":
+                                break
+
+                elif choice=="2":
+                    pass
+                elif choice=="3":
+                    print("Are you sure you wish to order that car?[Y]/[N]\n")
+                    yesOrNo=input("- ")
+                    if yesOrNo=="Y":
+                        ProcessOrder(username[0],id[0],offerId)
+                    else:
+                        pass
+                elif choice=="4":
+                    return 0
+
     currentTime=time.localtime()
     print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
     queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType, offerpostings.yearProd, offerpostings.datePosted FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId limit 15")
@@ -53,13 +78,18 @@ def listCurrentCarOffers():
         print("[1-15]Select a specific offer for more details\n'Return' to return to main menu")
         while True:
             usrChoice=input(": ")
-            if usrChoice=="1":
+            if usrChoice=="return" or usrChoice=="Return" or usrChoice=="RETURN":
+                return 0
+            elif usrChoice=="1":
                 offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
                 for k in range(0, len(offersList[int(usrChoice) - 1])):
                     offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
                     j += 1
                 print(offerOutput)
-                SpecificOfferChoice(offersList[int(usrChoice)-1][0])
+                queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{offers[int(usrChoice)-1][0]}'")
+                accId=queryExecutor.fetchone(); offerId=offers[int(usrChoice)-1][1]
+                SpecificOfferChoice(offersList[int(usrChoice)-1][0],offerId,accId[0])
+                listCurrentCarOffers()
                 del offerOutput
             elif usrChoice=="2":
                 offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
@@ -376,12 +406,36 @@ def postCarOffer():
         else:
             break
     queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{postingTime}','{comments}');")
+    queryExecutor.execute(f"INSERT INTO myoffers VALUES({id[0]},{offerId},'{postingTime}','Listed')")
     db_connection.commit()
-    print("\nYour offer was successfully posted!\n")
+    print(f"\nYour offer was successfully posted!\nOffer ID: {offerId}\n")
     main()
+
+def MyOffers(id):
+    print("Offers posted by you\n\n")
+    queryExecutor.execute(f"SELECT offerpostings.title,myoffers.offerId,myoffers.posted,myoffers.status FROM myoffers, offerpostings WHERE myoffers.accountId={id} AND offerpostings.accountId={id}")
+    myoffers=queryExecutor.fetchall()
+    print(f"You have posted {len(myoffers)} offers")
+    output="Title:     |  Offer ID:     |   Posted:     |   Status:\n"
+    for k in range(0,len(myoffers)):
+        for j in range(0,len(myoffers[k])):
+            output+=str(myoffers[k][j])+"       "
+        if k!=len(myoffers)-1:
+            output+="\nTitle:     |  Offer ID:     |   Posted:     |   Status:\n"
+    print(output)
+    print("\nProceed?")
+    proceed=input("- ")
+    return 0
+
 def main():
     global loginStatus
     if loginStatus==True:
+        queryExecutor.execute(f"SELECT notification FROM usernotifications WHERE accountId={id[0]}")
+        notifications=queryExecutor.fetchall()
+        if len(notifications)>0:
+            alertStatus=f"You have {len(notifications)} new notifications!"
+        else:
+            alertStatus = "You have no notifications."
         currentTime=time.localtime()
         if 5<=currentTime.tm_hour<=11:
             greeting="Good morning"
@@ -399,28 +453,70 @@ def main():
         greeting="Hello"
     print("       Ed's Car Dealership\n")
     if loginStatus==True:
-        print(f"{greeting}, {AccountData.accName}\n\n1 - Check the current car offers | 2 - Check your orders\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Account details/settings | 7 - Log off")
+        print(f"{greeting}, {AccountData.accName}\n\n{alertStatus}\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Account details/settings | 7 - Log off")
     else:
-        print("Hello, Guest\n\n1 - Check the current car offers | 2 - Check your orders\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Log in your account | 7 - Register Account")
+        print("Hello, Guest\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Log in your account | 7 - Register Account")
 
     while True:
         option=input("- ")
         if option=="1":
             listCurrentCarOffers()
+            main()
         elif option=="2":
-            pass
+            if loginStatus==False:
+                print("\nYou have to log in your account first.\n")
+            else:
+                MyOffers(id[0])
+                main()
         elif option=="3":
             if loginStatus==False:
                 print("\nYou need to log in your account first.\n")
             else:
                 postCarOffer()
+                main()
         elif option=="4":
             if loginStatus==False:
                 print("\nPlease log in your accounts or create one first.\n")
                 continue
         elif option=="5":
+            name=""
             if loginStatus==False:
-                continue
+                while True:
+                    sender=input("Introduce yourself: ")
+                    if len(sender)<1:
+                        continue
+                    else:
+                        name=sender
+                        break
+            else:
+                name=AccountData.accName
+            print("Title: \n")
+            title=input("- ")
+            if loginStatus==False:
+                print("Message(Please add information about how to contact you at the end):\n")
+            else:
+                print("Message:\n")
+            msg=input("- ")
+            print("Confirm you are not a robot:\n")
+            k=0
+            while k<3:
+                a = round(1 + random.random() * 15); b = round(1 + random.random() * 15); res = a + b
+                print(f"{a}+{b}=?")
+                userSol=input()
+                if int(userSol)!=res:
+                    print("\nFailed verification\n")
+                    k+=1
+                else:
+                    break
+            if k==3:
+                print("Verification failed 3 times! Try again later.")
+                main()
+            else:
+                queryExecutor.execute(f"INSERT INTO postbox(sentFrom,title,message,category) VALUES('{name}','{title}','{msg}','FEEDBACK/SUPPORT REQUEST');")
+                db_connection.commit()
+                print("Message sent! Thank you for contacting us.\n\n")
+                proceed=input("Proceed?\n")
+                main()
         elif option=="6":
             if loginStatus==False:
                 print("\n\n\n\n\n\n")
