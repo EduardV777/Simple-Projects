@@ -1,0 +1,6 @@
+CREATE TABLE postbox(
+sentFrom VARCHAR(60) NOT NULL,
+title VARCHAR(60) NOT NULL,
+message VARCHAR(5000) NOT NULL,
+category VARCHAR(50) NOT NULL
+);
