@@ -1,3 +1,5 @@
+CREATE USER 'admin2'@'localhost' IDENTIFIED BY 'admin';
+
 GRANT SELECT,INSERT,UPDATE ON accounts TO 'admin'@'localhost';
 GRANT SELECT,INSERT,UPDATE ON offerPostings TO 'admin'@'localhost';
 GRANT SELECT,INSERT,UPDATE ON reservednames TO 'admin'@'localhost';
