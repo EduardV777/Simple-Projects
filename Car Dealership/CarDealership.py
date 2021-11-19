@@ -57,9 +57,9 @@ def listCurrentCarOffers():
 
     currentTime=time.localtime()
     print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
-    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType, offerpostings.yearProd, offerpostings.datePosted FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId limit 15")
+    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType,offerpostings.yearProd, offerpostings.offerPrice, offerpostings.datePosted FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId limit 15")
     offers=queryExecutor.fetchall()
-    offer="№: / By: / Offer id: / Title: / Description: / Type: / Fuel Type: / Drive Type: / Production Year: / Posted:\n\n"
+    offer="№: / By: / Offer id: / Title: / Description:     / Type: / Fuel Type: / Drive Type: / Production Year: / Price:  / Posted:\n\n"
     for k in range(0,len(offers)):
         offer+=str(k+1)+" | "
         for j in range(0,len(offers[k])):
@@ -81,7 +81,7 @@ def listCurrentCarOffers():
             if usrChoice=="return" or usrChoice=="Return" or usrChoice=="RETURN":
                 return 0
             elif usrChoice=="1":
-                offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+                offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:    Price:\n\n"
                 for k in range(0, len(offersList[int(usrChoice) - 1])):
                     offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
                     j += 1
@@ -185,6 +185,7 @@ def listCurrentCarOffers():
         print("No offers currently found. 'Return' to continue to the menu.")
         usrChoice=input()
         main()
+
 def RegisterAccount():
     while True:
         username=input("Select a username for your account['Return' to go back to the menu]: ")
@@ -302,11 +303,15 @@ def postCarOffer():
     blockedWords = queryExecutor.fetchall()
     print("Write a title for your offer:\n")
     while True:
+        notAllowed=False
         title=input("- ")
         for k in range(0,len(blockedWords)):
             if blockedWords[k][0].lower() in title.lower() or blockedWords[k][0].upper() in title.upper():
                 print("\nThat title cannot be posted. Change your title and make sure it does not contain profanities, personal names or other sensitive data.\n")
-                continue
+                notAllowed=True
+                break
+        if notAllowed==True:
+            continue
         if len(title)<5:
             print("\nYou can add a bit more information in your title.\n")
             continue
@@ -340,6 +345,8 @@ def postCarOffer():
                     type="Hatchback"
                 elif "station wagon" in desc.lower():
                     type="Station wagon"
+                else:
+                    type="Unknown"
                 print(f"The system couldn't recognise the type you entered, so we attempted to determine it automatically\nThe type was determined as: '{type}'")
                 print("If that is correct select '1' to proceed or try to set it again by selecting '2'.\n")
                 option=input()
@@ -382,6 +389,26 @@ def postCarOffer():
             else:
                 year=str(year)
                 break
+    print("Specify the price for your offer(Leave blank if you'd like the customer to contact you for more information):\n")
+    while True:
+        wrong=False
+        price=input("- ")
+        if len(price)>0:
+            for k in range(0,len(price)):
+                if price[k].isalpha()==True:
+                    print("\nYou have entered incorrect price.\n")
+                    wrong=True
+            if float(price)==0 and wrong!=True:
+                price='Contact user for price details'
+            elif float(price)>999999999:
+                print("\nThat price is too high. Leave blank to discuss the price with a customer.\n")
+                continue
+            else:
+                price+="$"
+                break
+        else:
+            price='Contact user for price details'
+            break
     currentTime=time.localtime()
     postingTime=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
     del currentTime
@@ -405,23 +432,23 @@ def postCarOffer():
             continue
         else:
             break
-    queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{postingTime}','{comments}');")
-    queryExecutor.execute(f"INSERT INTO myoffers VALUES({id[0]},{offerId},'{postingTime}','Listed')")
+    queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,offerPrice,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{price}','{postingTime}','{comments}');")
+    queryExecutor.execute(f"INSERT INTO myoffers VALUES({id[0]},{offerId},'{price}','{postingTime}','Listed')")
     db_connection.commit()
     print(f"\nYour offer was successfully posted!\nOffer ID: {offerId}\n")
     main()
 
 def MyOffers(id):
     print("Offers posted by you\n\n")
-    queryExecutor.execute(f"SELECT offerpostings.title,myoffers.offerId,myoffers.posted,myoffers.status FROM myoffers, offerpostings WHERE myoffers.accountId={id} AND offerpostings.accountId={id}")
+    queryExecutor.execute(f"SELECT offerpostings.title,myoffers.offerId,myoffers.askPrice,myoffers.posted,myoffers.status FROM myoffers, offerpostings WHERE myoffers.accountId={id} AND offerpostings.accountId={id}")
     myoffers=queryExecutor.fetchall()
     print(f"You have posted {len(myoffers)} offers")
-    output="Title:     |  Offer ID:     |   Posted:     |   Status:\n"
+    output="Title:           |  Offer ID:     |     Price:     |   Posted:        |   Status:\n"
     for k in range(0,len(myoffers)):
         for j in range(0,len(myoffers[k])):
             output+=str(myoffers[k][j])+"       "
         if k!=len(myoffers)-1:
-            output+="\nTitle:     |  Offer ID:     |   Posted:     |   Status:\n"
+            output+="\nTitle:     |  Offer ID:     |     Price:     |   Posted:     |   Status:\n"
     print(output)
     print("\nProceed?")
     proceed=input("- ")
@@ -478,6 +505,63 @@ def main():
             if loginStatus==False:
                 print("\nPlease log in your accounts or create one first.\n")
                 continue
+            else:
+                title=f"Requested By: {username[0]}"
+                msg=""
+                while True:
+                    brand=input("Specify the brand of the car you'd like to request: ")
+                    if len(brand)<1:
+                        print("\nPlease enter a brand name of the car you'd like to request.\n")
+                        continue
+                    elif brand=="Return" or brand=="return":
+                        break
+                    else:
+                        msg+=f"[REQUEST DETAILS] Brand: {brand}  | "
+                        break
+                if brand=="Return" or brand=="return":
+                    del msg
+                    main()
+                else:
+                    while True:
+                        model=input("Specify the model: ")
+                        if len(model)<1:
+                            print("\nPlease specify the model of the car you'd like to request.\n")
+                            continue
+                        else:
+                            msg+=f"Model: {model}  | "
+                            break
+                    while True:
+                        prodYear=input("Specify production year: ")
+                        if len(prodYear)<1:
+                            print("\nPlease specify the production year of the car you'd like to request.\n")
+                            continue
+                        else:
+                            msg+=f"Production Year: {prodYear}  | "
+                            break
+                    while True:
+                        fType=input("Specify fuel type: ")
+                        if len(fType)<1:
+                            print("\nPlease specify the fuel type of the car you'd like to request.\n")
+                            continue
+                        else:
+                            msg+=f"Fuel Type: {fType}  | "
+                            break
+                    while True:
+                        addNotes=input("Would you like to add any additional notes to this request?(If you wish to skip that, leave blank): ")
+                        if len(addNotes)==0:
+                            msg+=f"Additional Comments/Notes: *None*  | "
+                            break
+                        else:
+                            msg += f"Additional Comments/Notes: {addNotes}  | "
+                            break
+                    currentTime=time.localtime()
+                    timeTxt=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+                    msg+=f"Sent: {timeTxt}"
+                    queryExecutor.execute(f"INSERT INTO postbox VALUES('{username[0]}','{title}','{msg}','SPECIAL REQUEST')")
+                    db_connection.commit()
+            print("\nYour request has been sent! You will be contacted as soon as possible.\n")
+            proceed=input()
+            main()
         elif option=="5":
             name=""
             if loginStatus==False:
