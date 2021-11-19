@@ -10,10 +10,11 @@ def listCurrentCarOffers():
             currentTime=time.localtime()
             queryExecutor.execute(f"SELECT * FROM offerpostings WHERE offerId={offerId} AND accountId={accId}")
             offerChoice=queryExecutor.fetchone()
-            queryExecutor.execute(f"INSERT INTO userorders VALUES({accountId},{offerId},'{offerChoice[0][2]}','{offerChoice[0][3]}','{offerChoice[0][4]}','{offerChoice[0][5]}','{offerChoice[0][6]}','{offerChoice[0][7]}','{offerChoice[0][8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING',{offerChoice[0][0]},'Waiting for seller response')")
+            queryExecutor.execute(f"INSERT INTO userorders VALUES({accountId},{offerId},'{offerChoice[2]}','{offerChoice[3]}','{offerChoice[4]}','{offerChoice[5]}','{offerChoice[6]}','{offerChoice[7]}','{offerChoice[8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING',{offerChoice[0]},'Waiting for seller response')")
             queryExecutor.execute(f"UPDATE myoffers SET status='Ordered' WHERE accountId={accId} AND offerId={offerId}")
+            queryExecutor.execute(f"INSERT INTO usernotifications VALUES({accId},'[Ordered offer]User {username[0]} has ordered a car you offer - Offer ID[{offerId}]. You can contact them to discuss more about the order.','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}')")
             db_connection.commit()
-            print("Order placed successfully!")
+            print("Order placed successfully! Expect to be contacted by the seller soon.")
 
         if loginStatus==False:
             print("You can't view any additional information about this user and their offer, unless you log in your account.")
@@ -21,7 +22,7 @@ def listCurrentCarOffers():
             proceed=input("- ")
         else:
             while True:
-                choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Order Now\n[4] - Return ")
+                choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Order Now\n[4] - Return\n- ")
                 if choice=="1":
                     a=round(1+random.random()*11); b=round(1+random.random()*11); res=a+b
                     print(f"Confirm you are human: {a}+{b}=?")
@@ -46,12 +47,22 @@ def listCurrentCarOffers():
                 elif choice=="2":
                     pass
                 elif choice=="3":
-                    print("Are you sure you wish to order that car?[Y]/[N]\n")
-                    yesOrNo=input("- ")
-                    if yesOrNo=="Y":
-                        ProcessOrder(username[0],id[0],offerId)
+                    queryExecutor.execute(f"SELECT offerId FROM myoffers where accountId={id[0]}")
+                    ids=queryExecutor.fetchall(); isThisMyOwnOffer=False
+                    for k in range(0,len(ids)):
+                        if ids[k][0]==offerId:
+                            print("\nThis is your own offer!\n")
+                            isThisMyOwnOffer=True
+                            break
+                    if isThisMyOwnOffer==True:
+                        continue
                     else:
-                        pass
+                        print("Are you sure you wish to order that car?[Y]/[N]\n")
+                        yesOrNo=input("- ")
+                        if yesOrNo=="Y":
+                            ProcessOrder(username[0],id[0],offerId)
+                        else:
+                            pass
                 elif choice=="4":
                     return 0
 
@@ -92,12 +103,16 @@ def listCurrentCarOffers():
                 listCurrentCarOffers()
                 del offerOutput
             elif usrChoice=="2":
-                offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
+                offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:    Price:\n\n"
                 for k in range(0, len(offersList[int(usrChoice) - 1])):
                     offerOutput += "  " + str(offersList[int(usrChoice) - 1][k]) + "  /  "
                     j += 1
                 print(offerOutput)
-                SpecificOfferChoice(offersList[int(usrChoice) - 1][0])
+                queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{offers[int(usrChoice) - 1][0]}'")
+                accId = queryExecutor.fetchone();
+                offerId = offers[int(usrChoice) - 1][1]
+                SpecificOfferChoice(offersList[int(usrChoice) - 1][0], offerId, accId[0])
+                listCurrentCarOffers()
                 del offerOutput
             elif usrChoice=="3":
                 offerOutput = "\n  Seller:    Offer id:    Brand/Model/General info:    Description:    Type:    Fuel Type:    Drive Type:    Production Year:\n\n"
@@ -454,10 +469,106 @@ def MyOffers(id):
     proceed=input("- ")
     return 0
 
+def mailbox():
+    def SendMessage():
+        pass
+    print("\n---Your mailbox---")
+    queryExecutor.execute(f"SELECT * FROM mailsystem WHERE sender='{username[0]}' and msgN=0")
+    sentMessages=queryExecutor.fetchall()
+    queryExecutor.execute(f"SELECT * FROM mailsystem WHERE receiver='{username[0]}' and msgN=0")
+    receivedMessages=queryExecutor.fetchall()
+    if len(sentMessages)==0:
+        print("\nNo sent messages\n")
+    else:
+        messages=""
+        print("\nStarted by you:\n")
+        for k in range(0,len(sentMessages)):
+            messages+=f"{k+1} ||| You - {sentMessages[k][4]}\n"
+    print("-----------------------------------------------------------")
+    if len(receivedMessages)==0:
+        print("\nNo received messages\n")
+    else:
+        messages=""
+        print("\nReceived:\n")
+        for k in range(0,len(receivedMessages)):
+            messages+=f"{k+1} ||| {receivedMessages[k][2]} - You"
+    print("[1] Send a message   |   [2] Select a message   |   [3]Delete a conversation   |   [4] Return\n")
+    while True:
+        option=input("- ")
+        if option=="1":
+            SendMessage()
+        elif option=="2":
+            while True:
+                which=input("Received or Sent?: ")
+                if not "Received" in which and not "received" in which and not "Sent" in which and not "sent" in which:
+                    continue
+                else:
+                    if "Sent" in which or "sent" in which:
+                        n=input("Which message?: ")
+                        conversation=sentMessages[n-1][0]
+                        queryExecutor.execute(f"SELECT * FROM mailsystem WHERE conversation={conversation} ORDER BY sortTime ASC")
+                        allMessages=queryExecutor.fetchall()
+                        dialogue=""
+                        for k in range(0,len(allMessages)):
+                            if k % 2 == 0:
+                                dialogue += f"                                          Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
+                            dialogue += f"Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
+                        print("\n[1]Reply   |   [2]Delete conversation   |   [3]Return\n")
+                        while True:
+                            option2 = input("- ")
+                            if option2 != "1" or option2 != "2" or option2 != "3":
+                                continue
+                            else:
+                                if option2 == "1":
+                                    print("Enter a message:\n")
+                                    msg = input("- ")
+                                elif option2 == "2":
+                                    print("\nDo you really wish to delete that conversation? [Y/N]\n")
+                                    yesorno = input("- ")
+                                    if yesorno == "Y":
+                                        print("\nDeleting conversation. . .\n")
+                                        mailbox()
+                                    else:
+                                        continue
+                                elif option2 == "3":
+                                    mailbox()
+                                break
+
+                    elif "Received" in which or "received" in which:
+                        n=input("Which message?: ")
+                        conversation=receivedMessages[n-1][0]
+                        queryExecutor.execute(f"SELECT * FROM mailsystem WHERE conversation={conversation} ORDER BY sortTime ASC")
+                        allMessages=queryExecutor.fetchall()
+                        dialogue=""
+                        for k in range(0,len(allMessages)):
+                            if k%2==0:
+                                dialogue += f"                                          Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
+                            dialogue+=f"Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
+                        print("\n[1]Reply   |   [2]Delete conversation   |   [3]Return\n")
+                        while True:
+                            option2=input("- ")
+                            if option2!="1" or option2!="2" or option2!="3":
+                                continue
+                            else:
+                                if option2=="1":
+                                    print("Enter a message:\n")
+                                    msg=input("- ")
+                                elif option2=="2":
+                                    print("\nDo you really wish to delete that conversation? [Y/N]\n")
+                                    yesorno=input("- ")
+                                    if yesorno=="Y":
+                                        print("\nDeleting conversation. . .\n")
+                                        mailbox()
+                                    else:
+                                        continue
+                                elif option2=="3":
+                                    mailbox()
+                                break
+
 def main():
     global loginStatus
     if loginStatus==True:
-        queryExecutor.execute(f"SELECT notification FROM usernotifications WHERE accountId={id[0]}")
+        queryExecutor.execute(f"SELECT * FROM usernotifications WHERE accountId={id[0]}")
         notifications=queryExecutor.fetchall()
         if len(notifications)>0:
             alertStatus=f"You have {len(notifications)} new notifications!"
@@ -480,7 +591,7 @@ def main():
         greeting="Hello"
     print("       Ed's Car Dealership\n")
     if loginStatus==True:
-        print(f"{greeting}, {AccountData.accName}\n\n{alertStatus}\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Account details/settings | 7 - Log off")
+        print(f"{greeting}, {AccountData.accName}\n\n{alertStatus}\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Account details/settings | 7 - Check your notifications\n8 - Go to your mailbox | 9 - Log Off")
     else:
         print("Hello, Guest\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Log in your account | 7 - Register Account")
 
@@ -611,6 +722,29 @@ def main():
                 pass
                 #AccountDetailsSettings()
         elif option=="7":
+            if loginStatus==False:
+                RegisterAccount()
+            else:
+                print("\n\n--Notifications--\n")
+                receiveNotifications=""
+                if len(notifications)>0:
+                    for k in range(0,len(notifications)):
+                        for j in range(len(notifications[k])-1,0,-1):
+                            receiveNotifications+=notifications[k][j]+"   "
+                        receiveNotifications+="\n"
+                else:
+                    print("\nYou have no notifications to show.\n")
+                    proceed=input()
+                    main()
+                queryExecutor.execute(f"DELETE FROM usernotifications WHERE accountId={id[0]} limit 1")
+                db_connection.commit()
+                print(receiveNotifications)
+                proceed=input()
+                main()
+        elif option=="8":
+            if loginStatus==True:
+                mailbox()
+        elif option=="9":
             if loginStatus==True:
                 del AccountData
                 loginStatus=False
