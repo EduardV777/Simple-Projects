@@ -7,3 +7,4 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON postbox TO 'admin'@'localhost';
 GRANT SELECT,INSERT,UPDATE,DELETE ON usernotifications TO 'admin'@'localhost';
 GRANT SELECT,INSERT,UPDATE,DELETE ON userorders TO 'admin'@'localhost';
 GRANT SELECT,INSERT,UPDATE,DELETE ON myoffers TO 'admin'@'localhost';
+GRANT SELECT,INSERT,UPDATE,DELETE ON mailsystem TO 'admin'@'localhost';
