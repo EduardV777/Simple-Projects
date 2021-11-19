@@ -5,3 +5,13 @@ for users to check their notifications when someone orders their car listed on t
 and maybe every user is gonna have a mailbox which will allow direct communication between users.
 Also users will have control over their offers and they will be able to delist their offers and change
 their status.
+
+{19.11.2021}
+- Fixed offerpostings table and added a row 'offerPrice'. Now users can add a price for their offer or leave it blank which makes it display the following message in the offers table - 'Contact user for price details'.
+- Created the functionality for 'Send special request' option. With that option users will be able to send special requests to the dealership.
+- Minor fixes in output for the offers table, post a car offer functionality and my offers.
+- Added notifications. When user orders a car, the seller will be notified.
+- Mailsystem is currently work in progress.
+
+*Ratings of users is still to be implemented
+**User control of offer's status is still to be implemented
