@@ -1,4 +1,5 @@
 CREATE TABLE mailsystem(
+accountId INT NOT NULL,
 conversation INT NOT NULL,
 msgN INT NOT NULL,
 sender VARCHAR(60) NOT NULL,
