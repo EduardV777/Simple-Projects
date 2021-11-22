@@ -471,11 +471,53 @@ def MyOffers(id):
 
 def mailbox():
     def SendMessage():
-        pass
+        while True:
+            match=False
+            recipient=input("Recipient: ")
+            queryExecutor.execute("SELECT username FROM accounts")
+            usersList=queryExecutor.fetchall()
+            for k in range(0,len(usersList)):
+                if recipient==usersList[k][0]:
+                    match=True
+                    break
+            if match==False:
+                print("\nNo user found with this name.\n")
+                continue
+            else:
+                queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{recipient}'")
+                recipientId=queryExecutor.fetchone()
+                break
+        while True:
+            msg=input("Enter message: ")
+            if len(msg)<3:
+                print("\nMessage is too short to start a conversation.\n")
+                continue
+            else:
+                break
+        queryExecutor.execute("SELECT conversation FROM mailsystem")
+        convList=queryExecutor.fetchall()
+        while True:
+            genAgain=False
+            convNum=round(1+random.random()*1000000)
+            for k in range(0,len(convList)):
+                if convNum==convList[k][0]:
+                    genAgain=True
+                    break
+            if genAgain==True:
+                continue
+            break
+        currentTime=time.localtime(); t=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+        queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{convNum},0,'{username[0]}','{msg}','{recipient}','{t}',{round(time.time())})")
+        queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{convNum},0,'{username[0]}','{msg}','{recipient}','{t}',{round(time.time())})")
+        queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} messaged you.','{t}')")
+        db_connection.commit()
+        print("\nMessage sent!\n")
+        proceed=input()
+
     print("\n---Your mailbox---")
-    queryExecutor.execute(f"SELECT * FROM mailsystem WHERE sender='{username[0]}' and msgN=0")
+    queryExecutor.execute(f"SELECT * FROM mailsystem WHERE (sender='{username[0]}' and msgN=0) and accountId={id[0]}")
     sentMessages=queryExecutor.fetchall()
-    queryExecutor.execute(f"SELECT * FROM mailsystem WHERE receiver='{username[0]}' and msgN=0")
+    queryExecutor.execute(f"SELECT * FROM mailsystem WHERE (receiver='{username[0]}' and msgN=0) and accountId={id[0]}")
     receivedMessages=queryExecutor.fetchall()
     if len(sentMessages)==0:
         print("\nNo sent messages\n")
@@ -483,7 +525,8 @@ def mailbox():
         messages=""
         print("\nStarted by you:\n")
         for k in range(0,len(sentMessages)):
-            messages+=f"{k+1} ||| You - {sentMessages[k][4]}\n"
+            messages+=f"{k+1} ||| (To: {sentMessages[k][5]}): {sentMessages[k][4]} [Started: {sentMessages[k][6]}]\n"
+        print(messages)
     print("-----------------------------------------------------------")
     if len(receivedMessages)==0:
         print("\nNo received messages\n")
@@ -491,79 +534,197 @@ def mailbox():
         messages=""
         print("\nReceived:\n")
         for k in range(0,len(receivedMessages)):
-            messages+=f"{k+1} ||| {receivedMessages[k][2]} - You"
-    print("[1] Send a message   |   [2] Select a message   |   [3]Delete a conversation   |   [4] Return\n")
+            messages+=f"{k+1} ||| (From: {receivedMessages[k][3]}): {receivedMessages[k][4]} [Started: {receivedMessages[k][6]}]\n"
+        print(messages)
+    print("\n\n[1] Send a message   |   [2] Select a message   |   [3]Delete a conversation   |   [4] Return\n")
+    deleted = False; returnBack = False; goBackToMain=False
     while True:
+        if deleted == True or returnBack == True:
+            break
         option=input("- ")
         if option=="1":
             SendMessage()
+            break
         elif option=="2":
             while True:
+                if deleted == True or returnBack == True:
+                    break
                 which=input("Received or Sent?: ")
                 if not "Received" in which and not "received" in which and not "Sent" in which and not "sent" in which:
                     continue
                 else:
                     if "Sent" in which or "sent" in which:
-                        n=input("Which message?: ")
-                        conversation=sentMessages[n-1][0]
-                        queryExecutor.execute(f"SELECT * FROM mailsystem WHERE conversation={conversation} ORDER BY sortTime ASC")
-                        allMessages=queryExecutor.fetchall()
-                        dialogue=""
-                        for k in range(0,len(allMessages)):
-                            if k % 2 == 0:
-                                dialogue += f"                                          Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
-                            dialogue += f"Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
-                        print("\n[1]Reply   |   [2]Delete conversation   |   [3]Return\n")
-                        while True:
-                            option2 = input("- ")
-                            if option2 != "1" or option2 != "2" or option2 != "3":
-                                continue
-                            else:
-                                if option2 == "1":
-                                    print("Enter a message:\n")
-                                    msg = input("- ")
-                                elif option2 == "2":
-                                    print("\nDo you really wish to delete that conversation? [Y/N]\n")
-                                    yesorno = input("- ")
-                                    if yesorno == "Y":
-                                        print("\nDeleting conversation. . .\n")
-                                        mailbox()
+                        if len(sentMessages)>0:
+                            while True:
+                                try:
+                                    n=int(input("Which message?: "))
+                                    if n-1<len(sentMessages):
+                                        break
                                     else:
+                                        print("\nNo conversation found.\n")
                                         continue
-                                elif option2 == "3":
-                                    mailbox()
-                                break
+                                except ValueError:
+                                    print("\nCouldn't find a conversation with the given number. Check your mailbox again.\n")
+                                    continue
+                            while True:
+                                if deleted == True or returnBack == True:
+                                    break
+                                conversation=sentMessages[n-1][1]
+                                queryExecutor.execute(f"SELECT * FROM mailsystem WHERE conversation={conversation} and accountId={id[0]} ORDER BY sortTime ASC")
+                                allMessages=queryExecutor.fetchall()
+                                queryExecutor.execute(f"SELECT MAX(msgN) FROM mailsystem WHERE conversation={conversation}")
+                                lastMsgN=queryExecutor.fetchone()
+                                dialogue=""
+                                for k in range(0,len(allMessages)):
+                                    if username[0] != allMessages[k][3]:
+                                        dialogue += f"                                          Sent by: {allMessages[k][3]} [{allMessages[k][6]}]:\n                                          --{allMessages[k][4]}\n\n"
+                                    else:
+                                        dialogue += f"\nSent by: {allMessages[k][3]} [{allMessages[k][6]}]:\n--{allMessages[k][4]}\n\n"
+                                print(dialogue)
+                                print("\n[1]Reply   |   [2]Delete conversation   |   [3]Return\n")
+                                while True:
+                                    option2 = input("- ")
+                                    if option2 != "1" and option2 != "2" and option2 != "3":
+                                        continue
+                                    else:
+                                        if option2 == "1":
+                                            print("Enter a message:\n")
+                                            msg = input("- ")
+                                            queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{sentMessages[n-1][5]}'")
+                                            recipientId=queryExecutor.fetchone()
+                                            currentTime=time.localtime(); t=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{sentMessages[n-1][5]}','{t}',{round(time.time())})")
+                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{sentMessages[n - 1][5]}','{t}',{round(time.time())})")
+                                            queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} replied to your message.','{t}')")
+                                            db_connection.commit()
+                                            break
+                                        elif option2 == "2":
+                                            print("\nDo you really wish to delete that conversation? [Y/N]\n")
+                                            yesorno = input("- ")
+                                            if yesorno == "Y":
+                                                print("\nDeleting conversation. . .\n")
+                                                queryExecutor.execute(f"DELETE FROM mailsystem WHERE conversation={conversation} and accountId={id[0]}")
+                                                db_connection.commit()
+                                                deleted=True
+                                                break
+                                            else:
+                                                continue
+                                        elif option2 == "3":
+                                            returnBack=True
+                                        break
+                        else:
+                            print("\nYou have no started conversations.\n")
 
                     elif "Received" in which or "received" in which:
-                        n=input("Which message?: ")
-                        conversation=receivedMessages[n-1][0]
-                        queryExecutor.execute(f"SELECT * FROM mailsystem WHERE conversation={conversation} ORDER BY sortTime ASC")
-                        allMessages=queryExecutor.fetchall()
-                        dialogue=""
-                        for k in range(0,len(allMessages)):
-                            if k%2==0:
-                                dialogue += f"                                          Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
-                            dialogue+=f"Sent by: {allMessages[k][2]} at {allMessages[k][5]}:\n--{allMessages[k][3]}"
-                        print("\n[1]Reply   |   [2]Delete conversation   |   [3]Return\n")
-                        while True:
-                            option2=input("- ")
-                            if option2!="1" or option2!="2" or option2!="3":
-                                continue
-                            else:
-                                if option2=="1":
-                                    print("Enter a message:\n")
-                                    msg=input("- ")
-                                elif option2=="2":
-                                    print("\nDo you really wish to delete that conversation? [Y/N]\n")
-                                    yesorno=input("- ")
-                                    if yesorno=="Y":
-                                        print("\nDeleting conversation. . .\n")
-                                        mailbox()
+                        if len(receivedMessages)>0:
+                            while True:
+                                try:
+                                    n=int(input("Which message?: "))
+                                    if n-1<len(receivedMessages):
+                                        break
                                     else:
+                                        print("\nNo conversation found.\n")
                                         continue
-                                elif option2=="3":
-                                    mailbox()
+                                except ValueError:
+                                    print("\nCouldn't find a conversation with the given number. Check your mailbox again.\n")
+                                    continue
+                            print("\n\n")
+                            while True:
+                                if deleted==True or returnBack==True:
+                                    break
+                                conversation=receivedMessages[n-1][1]
+                                queryExecutor.execute(f"SELECT MAX(msgN) FROM mailsystem WHERE conversation={conversation}")
+                                lastMsgN=queryExecutor.fetchone()
+                                queryExecutor.execute(f"SELECT * FROM mailsystem WHERE conversation={conversation} and accountId={id[0]} ORDER BY sortTime ASC")
+                                allMessages=queryExecutor.fetchall()
+                                dialogue=""
+                                for k in range(0,len(allMessages)):
+                                    if allMessages[k][3]!=f"{username[0]}":
+                                        dialogue += f"                                          Sent by: {allMessages[k][3]} [{allMessages[k][6]}]:\n                                          --{allMessages[k][4]}\n\n"
+                                    else:
+                                        dialogue+=f"Sent by: {allMessages[k][3]} [{allMessages[k][6]}]:\n--{allMessages[k][4]}\n\n"
+                                print(dialogue)
+                                print("\n\n[1]Reply   |   [2]Delete conversation   |   [3]Return\n")
+                                while True:
+                                    option2=input("- ")
+                                    if option2!="1" and option2!="2" and option2!="3":
+                                        continue
+                                    else:
+                                        if option2=="1":
+                                            print("Enter a message:\n")
+                                            msg=input("- ")
+                                            queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{receivedMessages[n - 1][3]}'")
+                                            recipientId = queryExecutor.fetchone()
+                                            currentTime=time.localtime(); t=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{receivedMessages[n-1][3]}','{t}',{round(time.time())})")
+                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{conversation},{lastMsgN[0] + 1},'{username[0]}','{msg}','{receivedMessages[n - 1][3]}','{t}',{round(time.time())})")
+                                            queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} replied to your message.','{t}')")
+                                            db_connection.commit()
+                                            break
+                                        elif option2=="2":
+                                            print("\nDo you really wish to delete that conversation? [Y/N]\n")
+                                            yesorno=input("- ")
+                                            if yesorno=="Y":
+                                                print("\nDeleting conversation. . .\n")
+                                                queryExecutor.execute(f"DELETE FROM mailsystem WHERE conversation={conversation} and accountId={id[0]}")
+                                                db_connection.commit()
+                                                deleted=True
+                                                break
+                                            else:
+                                                continue
+                                        elif option2=="3":
+                                            returnBack=True
+                                        break
+                            else:
+                                print("\nYou have no received messages.\n")
+        elif option=="3":
+            while True:
+                if deleted==True or returnBack==True:
+                    break
+                which=input("Sent or received? - ")
+                if not "Sent" in which and "sent" in which and "Received" in which or "received" in which:
+                    continue
+                else:
+                    if "Sent" in which or "sent" in which:
+                        while True:
+                            try:
+                                n=int(input("Which conversation you'd like to delete? - "))
+                            except:
+                                print("\nNo conversation found with the given number.\n")
+                                continue
+                            if n-1<len(sentMessages):
+                                conversation=sentMessages[n-1][1]
+                                queryExecutor.execute(f"DELETE FROM mailsystem WHERE conversation={conversation} and accountId={id[0]}")
+                                db_connection.commit()
+                                print("\nConversation deleted!\n")
+                                deleted=True
                                 break
+                            else:
+                                print("\nNo conversation found.\n")
+                                continue
+                    elif "Received" in which or "received" in which:
+                        while True:
+                            try:
+                                n=int(input("Which conversation you'd like to delete? - "))
+                            except ValueError:
+                                print("\nNo conversation found with the given number.\n")
+                                continue
+                            if n-1<len(receivedMessages):
+                                conversation=receivedMessages[n-1][1]
+                                queryExecutor.execute(f"DELETE FROM mailsystem WHERE conversation={conversation} and accountId={id[0]}")
+                                db_connection.commit()
+                                print("\nConversation deleted!\n")
+                                deleted=True
+                            else:
+                                print("\nNo conversation found.\n")
+                                continue
+        elif option=="4":
+            goBackToMain=True
+            break
+    if goBackToMain==True:
+        main()
+    else:
+        mailbox()
 
 def main():
     global loginStatus
@@ -736,7 +897,7 @@ def main():
                     print("\nYou have no notifications to show.\n")
                     proceed=input()
                     main()
-                queryExecutor.execute(f"DELETE FROM usernotifications WHERE accountId={id[0]} limit 1")
+                queryExecutor.execute(f"DELETE FROM usernotifications WHERE accountId={id[0]}")
                 db_connection.commit()
                 print(receiveNotifications)
                 proceed=input()
