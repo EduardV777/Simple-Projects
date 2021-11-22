@@ -726,6 +726,134 @@ def mailbox():
     else:
         mailbox()
 
+def AccountSettings():
+    print("[1] - Update your profile information | [2] - Change your password\n[3] - Delete your account\n")
+    failedToVerify=False; times=0
+    while True:
+        if failedToVerify==True:
+            break
+        option=input("- ")
+        if option=="1":
+            while True:
+                if times==3:
+                    print("\nPassword verification failed!\n")
+                    failedToVerify=True
+                    break
+                passw=input("Please enter your password to access sensitive data: ")
+                if len(passw)==0:
+                    print("\nPlease enter your password to verify your access to sensitive data.\n")
+                    continue
+                passw=passw.encode(); passw=hashlib.sha256(passw); passw=passw.hexdigest()
+                queryExecutor.execute(f"SELECT password FROM accounts WHERE id={id[0]}")
+                currPass=queryExecutor.fetchone()
+                if currPass[0]!=passw:
+                    print("\nIncorrect Password\n")
+                    times+=1
+                    continue
+                else:
+                    while True:
+                        print("-----Profile data-----\n")
+                        queryExecutor.execute(f"SELECT * FROM accounts WHERE id={id[0]}")
+                        accountData=queryExecutor.fetchone()
+                        print(f"This account was created: {accountData[4]}\n\nUsername: {username[0]}\n\nE-mail: {accountData[3]}\n\nAccount rating(Based on user rates): {accountData[5]}\n\nAddress: {accountData[6]}\n\nPhone number: {accountData[7]}\n\nCompany:{accountData[8]}\n[1]Change your username  |  [2]Change your contact information\n")
+                        alreadyRequested=False
+                        while True:
+                            failedToVerify = False
+                            option2 = input("- ")
+                            if option2=="1":
+                                queryExecutor.execute("SELECT accountId FROM namechanges")
+                                requests=queryExecutor.fetchall()
+                                for k in range(0,len(requests)):
+                                    if id[0]==requests[k][0]:
+                                        print("\nYou have already requested a username change that is awaiting approval.\n")
+                                        alreadyRequested=True
+                                        break
+                                if alreadyRequested==True:
+                                    break
+                                while True:
+                                    newName=input("Enter your new username? - ")
+                                    if len(newName)<2:
+                                        print("\nYour username should be longer than 2 symbols\n")
+                                        continue
+                                    elif len(newName)>20:
+                                        print("\nYour username should be shorter than 20 symbols\n")
+                                        continue
+                                    else:
+                                        break
+                                copyTxt=""; showCopy=False
+                                while True:
+                                    if showCopy==True:
+                                        showCopy==False; print(copyTxt)
+                                    reason=input("Why do you want to change your username(This is done to prevent fraud or other types of misuse)? \n(200 symbols max.)\n- ")
+                                    if len(reason)==0:
+                                        print("\nPlease enter a short explanation about why do you want to change your username.\n")
+                                        continue
+                                    elif len(reason)>200:
+                                        print("\nYour text is exceeding 200 symbols. Please shorten your text before sending.\n")
+                                        showCopy=True; copyTxt=reason
+                                        continue
+                                    else:
+                                        queryExecutor.execute(f"INSERT INTO namechanges({id[0]},'{username[0]}','{newName}','{reason}')")
+                                        db_connection.commit()
+                                        print("Thank you for contacting us!\nYour username change request has been sent! Expect response in 24-48 hours.")
+                                        proceed=input()
+                                        break
+                                break
+                            elif option2=="2":
+                                times=0
+                                while True:
+                                    success = False
+                                    if times==3:
+                                        print("\nYou have failed to verify your access. Please try again later.\n")
+                                        break
+                                    passw=input("Enter your current password to verify your access: ")
+                                    passw=passw.encode(); passw=hashlib.sha256(passw); passw=passw.hexdigest()
+                                    queryExecutor.select(f"SELECT password FROM accounts WHERE id={id[0]}")
+                                    currPass=queryExecutor.fetchone()
+                                    if passw!=currPass[0]:
+                                        print("\nIncorrect password\n")
+                                        times+=1
+                                        del currPass
+                                        continue
+                                    else:
+                                        del currPass
+                                        while True:
+                                            newPass=input("Enter your new password: ")
+                                            if len(newPass)<4:
+                                                print("\nYour password is too short. It must be at least 4 symbols long.\n")
+                                                continue
+                                            else:
+                                                times=0;
+                                                while True:
+                                                    if times==3:
+                                                        print("\nTry setting your new password again\n")
+                                                        break
+                                                    confirm=input("Confirm your new password: ")
+                                                    if confirm!=newPass:
+                                                        print("\nPasswords do not match! Try again.\n")
+                                                        times+=1
+                                                        continue
+                                                    else:
+                                                        print("\nYour password has been changed!\n")
+                                                        success=True
+                                                        break
+                                                if success==True:
+                                                    break
+                                    if success == True:
+                                        break
+                            elif option2=="3":
+                                pass
+                                #TODO
+                            if failedToVerify==True:
+                                break
+
+
+
+
+        else:
+            continue
+    AccountSettings()
+
 def main():
     global loginStatus
     if loginStatus==True:
@@ -880,8 +1008,7 @@ def main():
                     loginStatus=True
                 main()
             else:
-                pass
-                #AccountDetailsSettings()
+                AccountSettings()
         elif option=="7":
             if loginStatus==False:
                 RegisterAccount()
