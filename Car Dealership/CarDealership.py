@@ -37,19 +37,27 @@ def listCurrentCarOffers():
                     else:
                         queryExecutor.execute(f"SELECT email FROM accounts where username='{sellerName}'")
                         email=queryExecutor.fetchone()
-                        print(f"Contact information for seller:\nE-mail: {email[0]}\n[1] - Contact | [2] - Return")
-                        while True:
-                            userContactChoice=input(" - ")
-                            if userContactChoice=="1":
-                                print("----Contact Form----\nTitle:")
-                                title=input("- ")
-                                print("Message:")
-                                message=input("- ")
-                            elif userContactChoice=="2":
-                                break
-
+                        queryExecutor.execute(f"SELECT address FROM accounts where username='{sellerName}'")
+                        address=queryExecutor.fetchone()
+                        queryExecutor.execute(f"SELECT telephone FROM accounts where username='{sellerName}'")
+                        phone=queryExecutor.fetchone()
+                        queryExecutor.execute(f"SELECT company FROM accounts where username='{sellerName}'")
+                        company=queryExecutor.fetchone()
+                        print(f"Contact information for seller:\n")
+                        if company[0]!="None":
+                            print(f"Company: {company[0]}")
+                        print(f"E-mail: {email[0]}")
+                        if phone[0]!="Not stated":
+                            print(f"Phone: {phone[0]}")
+                        if address[0]!="Not stated":
+                            print(f"Address: {address}")
+                            proceed=input(" - ")
                 elif choice=="2":
-                    pass
+                    queryExecutor.execute(f"SELECT rating FROM accounts WHERE username='{sellerName}'")
+                    rating=queryExecutor.fetchone()
+                    print(f"\n{sellerName}'s current rating: {rating[0]}\n")
+                    proceed=input()
+                    continue
                 elif choice=="3":
                     queryExecutor.execute(f"SELECT offerId FROM myoffers where accountId={id[0]}")
                     ids=queryExecutor.fetchall(); isThisMyOwnOffer=False
@@ -92,7 +100,7 @@ def listCurrentCarOffers():
     if len(offers)>0:
         print("[1-15]Select a specific offer for more details\n'Return' to return to main menu")
         while True:
-            usrChoice=input(": ")
+            usrChoice=input("- ")
             if usrChoice=="return" or usrChoice=="Return" or usrChoice=="RETURN":
                 return 0
             elif usrChoice=="1":
@@ -345,6 +353,8 @@ def postCarOffer():
         if len(title)<5:
             print("\nYou can add a bit more information in your title.\n")
             continue
+        elif title=="Return" or title=="return":
+            return 0
         else:
             break
     print("Write detailed description for your offer:\n")
@@ -466,23 +476,42 @@ def postCarOffer():
     queryExecutor.execute(f"INSERT INTO myoffers VALUES({id[0]},{offerId},'{price}','{postingTime}','Listed')")
     db_connection.commit()
     print(f"\nYour offer was successfully posted!\nOffer ID: {offerId}\n")
-    main()
+    proceed=input()
+    return 0
 
 def MyOffers(id):
     print("Offers posted by you\n\n")
     queryExecutor.execute(f"SELECT offerpostings.title,myoffers.offerId,myoffers.askPrice,myoffers.posted,myoffers.status FROM myoffers, offerpostings WHERE myoffers.accountId={id} AND offerpostings.accountId={id}")
     myoffers=queryExecutor.fetchall()
     print(f"You have posted {len(myoffers)} offers")
-    output="Title:           |  Offer ID:     |     Price:     |   Posted:        |   Status:\n"
+    output="№:           |      Title:           |  Offer ID:     |     Price:     |   Posted:        |   Status:\n"
     for k in range(0,len(myoffers)):
         for j in range(0,len(myoffers[k])):
             output+=str(myoffers[k][j])+"       "
         if k!=len(myoffers)-1:
-            output+="\nTitle:     |  Offer ID:     |     Price:     |   Posted:     |   Status:\n"
+            output+="\n№:           |      Title:           |  Offer ID:     |     Price:     |   Posted:        |   Status:\n"
     print(output)
-    print("\nProceed?")
-    proceed=input("- ")
-    return 0
+    print("\n[1]I wish to manage my offers   |   [2]Return\n")
+    while True:
+        option=input("- ")
+        if option=="1":
+            while True:
+                option2=input("Choose an offer from your list by number: ")
+                if option2=="Return" or option2=="return":
+                    break
+                elif int(option2)>len(myoffers) or int(option2)<1:
+                    print("\nCouldn't find an offer with the given number.\n")
+                    continue
+                else:
+                    n=int(option2)-1
+                    pickedOffer=myoffers[n]
+                    print(pickedOffer)
+                    test=input()
+                #testing
+        elif option=="2":
+            return 0
+        else:
+            continue
 
 def mailbox():
     def SendMessage():
@@ -751,7 +780,6 @@ def mailbox():
         mailbox()
 
 def AccountSettings():
-    #print("[1] - Update your profile information | [2] - Change your password\n[3] - Delete your account\n")
     failedToVerify=False; times=0; returnBack=False
     while True:
         print("[1] - Update your profile information | [2] - Change your password\n[3] - Delete your account\n")
@@ -997,6 +1025,65 @@ def AccountSettings():
             continue
     AccountSettings()
 
+def SpecialRequest():
+    title = f"Requested By: {username[0]}"
+    msg = ""
+    while True:
+        brand = input("Specify the brand of the car you'd like to request: ")
+        if len(brand) < 1:
+            print("\nPlease enter a brand name of the car you'd like to request.\n")
+            continue
+        elif brand == "Return" or brand == "return":
+            break
+        else:
+            msg += f"[REQUEST DETAILS] Brand: {brand}  | "
+            break
+    if brand == "Return" or brand == "return":
+        del msg
+        main()
+    else:
+        while True:
+            model = input("Specify the model: ")
+            if len(model) < 1:
+                print("\nPlease specify the model of the car you'd like to request.\n")
+                continue
+            else:
+                msg += f"Model: {model}  | "
+                break
+        while True:
+            prodYear = input("Specify production year: ")
+            if len(prodYear) < 1:
+                print("\nPlease specify the production year of the car you'd like to request.\n")
+                continue
+            else:
+                msg += f"Production Year: {prodYear}  | "
+                break
+        while True:
+            fType = input("Specify fuel type: ")
+            if len(fType) < 1:
+                print("\nPlease specify the fuel type of the car you'd like to request.\n")
+                continue
+            else:
+                msg += f"Fuel Type: {fType}  | "
+                break
+        while True:
+            addNotes = input(
+                "Would you like to add any additional notes to this request?(If you wish to skip that, leave blank): ")
+            if len(addNotes) == 0:
+                msg += f"Additional Comments/Notes: *None*  | "
+                break
+            else:
+                msg += f"Additional Comments/Notes: {addNotes}  | "
+                break
+        currentTime = time.localtime()
+        timeTxt = f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+        msg += f"Sent: {timeTxt}"
+        queryExecutor.execute(f"INSERT INTO postbox VALUES('{username[0]}','{title}','{msg}','SPECIAL REQUEST')")
+        db_connection.commit()
+        print("\nYour request has been sent! You will be contacted as soon as possible.\n")
+        proceed = input()
+        return 0
+
 def main(deletedAccount=False):
     global loginStatus
     if connectionFailure==True:
@@ -1063,62 +1150,8 @@ def main(deletedAccount=False):
                 print("\nPlease log in your accounts or create one first.\n")
                 continue
             else:
-                title=f"Requested By: {username[0]}"
-                msg=""
-                while True:
-                    brand=input("Specify the brand of the car you'd like to request: ")
-                    if len(brand)<1:
-                        print("\nPlease enter a brand name of the car you'd like to request.\n")
-                        continue
-                    elif brand=="Return" or brand=="return":
-                        break
-                    else:
-                        msg+=f"[REQUEST DETAILS] Brand: {brand}  | "
-                        break
-                if brand=="Return" or brand=="return":
-                    del msg
-                    main()
-                else:
-                    while True:
-                        model=input("Specify the model: ")
-                        if len(model)<1:
-                            print("\nPlease specify the model of the car you'd like to request.\n")
-                            continue
-                        else:
-                            msg+=f"Model: {model}  | "
-                            break
-                    while True:
-                        prodYear=input("Specify production year: ")
-                        if len(prodYear)<1:
-                            print("\nPlease specify the production year of the car you'd like to request.\n")
-                            continue
-                        else:
-                            msg+=f"Production Year: {prodYear}  | "
-                            break
-                    while True:
-                        fType=input("Specify fuel type: ")
-                        if len(fType)<1:
-                            print("\nPlease specify the fuel type of the car you'd like to request.\n")
-                            continue
-                        else:
-                            msg+=f"Fuel Type: {fType}  | "
-                            break
-                    while True:
-                        addNotes=input("Would you like to add any additional notes to this request?(If you wish to skip that, leave blank): ")
-                        if len(addNotes)==0:
-                            msg+=f"Additional Comments/Notes: *None*  | "
-                            break
-                        else:
-                            msg += f"Additional Comments/Notes: {addNotes}  | "
-                            break
-                    currentTime=time.localtime()
-                    timeTxt=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
-                    msg+=f"Sent: {timeTxt}"
-                    queryExecutor.execute(f"INSERT INTO postbox VALUES('{username[0]}','{title}','{msg}','SPECIAL REQUEST')")
-                    db_connection.commit()
-            print("\nYour request has been sent! You will be contacted as soon as possible.\n")
-            proceed=input()
-            main()
+                SpecialRequest()
+                main()
         elif option=="5":
             name=""
             if loginStatus==False:
