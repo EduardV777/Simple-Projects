@@ -1,7 +1,11 @@
 import mysql.connector; import time; import hashlib; import random
 global db_connection; global queryExecutor; global loginStatus
-loginStatus=False
-db_connection=mysql.connector.connect(host="localhost", user="admin", password="admin", database="cardealership"); queryExecutor=db_connection.cursor()
+loginStatus=False; connectionFailure=False
+try:
+    db_connection=mysql.connector.connect(host="localhost", user="admin", password="admin", database="cardealership"); queryExecutor=db_connection.cursor()
+except:
+    print("[ERROR]: Database connection failed!")
+    connectionFailure=True
 
 def listCurrentCarOffers():
     def SpecificOfferChoice(sellerName,offerId,accId):
@@ -261,10 +265,20 @@ def RegisterAccount():
             break
     while True:
         email=input("Enter your e-mail: (Why?)")
+        queryExecutor.execute("SELECT email FROM accounts")
+        emails=queryExecutor.fetchall(); sameEmails=False
+        #does the email match another user's email
+        for k in range(0,len(emails)):
+            if email==emails[k][0]:
+                print("\nThe entered email is already in use! Please try another one.\n")
+                sameEmails=True
+                break
+        if sameEmails==True:
+            continue
         if email=="Why" or email=="WHY" or email=="why" or email=="Why?" or email=="WHY?" or email=="why?":
             print("\n*Your e-mail is required in case any changes are performed to your account to confirm that it is you doing them.\nAlso, your e-mail can be used to get contacted by other users regards your car offers posted here.\nYour e-mail also provides a way for admin to contact your in case the need arises.*\n")
             continue
-        elif len(email)<3 or not "@" in email:
+        elif len(email)<3 or not "@" in email or not "." in email:
             print("\nE-mail is not correct.\n")
             continue
         else:
@@ -273,6 +287,7 @@ def RegisterAccount():
     queryExecutor.execute(f"INSERT INTO accounts(username,PASSWORD,email, dateCreated) VAlUES('{username}','{passwordCrypted}','{email}','{currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year}');")
     db_connection.commit()
     print(f"\nYour account with username '{username}' has been created! You can now log in.\n")
+    proceed=input()
     return 0
 
 def LogInAcc():
@@ -593,9 +608,13 @@ def mailbox():
                                             queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{sentMessages[n-1][5]}'")
                                             recipientId=queryExecutor.fetchone()
                                             currentTime=time.localtime(); t=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
-                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{sentMessages[n-1][5]}','{t}',{round(time.time())})")
-                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{sentMessages[n - 1][5]}','{t}',{round(time.time())})")
-                                            queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} replied to your message.','{t}')")
+                                            try:
+                                                queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{conversation},{lastMsgN[0] + 1},'{username[0]}','{msg}','{sentMessages[n - 1][5]}','{t}',{round(time.time())})")
+                                                queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{sentMessages[n-1][5]}','{t}',{round(time.time())})")
+                                                queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} replied to your message.','{t}')")
+                                            except TypeError:
+                                                print("\nCannot reply. User does not exist anymore.\n")
+                                                break
                                             db_connection.commit()
                                             break
                                         elif option2 == "2":
@@ -656,9 +675,13 @@ def mailbox():
                                             queryExecutor.execute(f"SELECT id FROM accounts WHERE username='{receivedMessages[n - 1][3]}'")
                                             recipientId = queryExecutor.fetchone()
                                             currentTime=time.localtime(); t=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
-                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{receivedMessages[n-1][3]}','{t}',{round(time.time())})")
-                                            queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{conversation},{lastMsgN[0] + 1},'{username[0]}','{msg}','{receivedMessages[n - 1][3]}','{t}',{round(time.time())})")
-                                            queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} replied to your message.','{t}')")
+                                            try:
+                                                queryExecutor.execute(f"INSERT INTO mailsystem VALUES({recipientId[0]},{conversation},{lastMsgN[0] + 1},'{username[0]}','{msg}','{receivedMessages[n - 1][3]}','{t}',{round(time.time())})")
+                                                queryExecutor.execute(f"INSERT INTO mailsystem VALUES({id[0]},{conversation},{lastMsgN[0]+1},'{username[0]}','{msg}','{receivedMessages[n-1][3]}','{t}',{round(time.time())})")
+                                                queryExecutor.execute(f"INSERT INTO usernotifications VALUES({recipientId[0]},'{username[0]} replied to your message.','{t}')")
+                                            except TypeError:
+                                                print("\nCannot reply. User does not exist anymore.\n")
+                                                break
                                             db_connection.commit()
                                             break
                                         elif option2=="2":
@@ -715,6 +738,7 @@ def mailbox():
                                 db_connection.commit()
                                 print("\nConversation deleted!\n")
                                 deleted=True
+                                break
                             else:
                                 print("\nNo conversation found.\n")
                                 continue
@@ -727,14 +751,19 @@ def mailbox():
         mailbox()
 
 def AccountSettings():
-    print("[1] - Update your profile information | [2] - Change your password\n[3] - Delete your account\n")
-    failedToVerify=False; times=0
+    #print("[1] - Update your profile information | [2] - Change your password\n[3] - Delete your account\n")
+    failedToVerify=False; times=0; returnBack=False
     while True:
+        print("[1] - Update your profile information | [2] - Change your password\n[3] - Delete your account\n")
+        if returnBack == True:
+            break
         if failedToVerify==True:
             break
         option=input("- ")
         if option=="1":
             while True:
+                if returnBack == True:
+                    break
                 if times==3:
                     print("\nPassword verification failed!\n")
                     failedToVerify=True
@@ -751,7 +780,10 @@ def AccountSettings():
                     times+=1
                     continue
                 else:
+                    returnBack=False
                     while True:
+                        if returnBack==True:
+                            break
                         print("-----Profile data-----\n")
                         queryExecutor.execute(f"SELECT * FROM accounts WHERE id={id[0]}")
                         accountData=queryExecutor.fetchone()
@@ -800,63 +832,190 @@ def AccountSettings():
                                         break
                                 break
                             elif option2=="2":
-                                times=0
                                 while True:
-                                    success = False
-                                    if times==3:
-                                        print("\nYou have failed to verify your access. Please try again later.\n")
-                                        break
-                                    passw=input("Enter your current password to verify your access: ")
-                                    passw=passw.encode(); passw=hashlib.sha256(passw); passw=passw.hexdigest()
-                                    queryExecutor.select(f"SELECT password FROM accounts WHERE id={id[0]}")
-                                    currPass=queryExecutor.fetchone()
-                                    if passw!=currPass[0]:
-                                        print("\nIncorrect password\n")
-                                        times+=1
-                                        del currPass
-                                        continue
-                                    else:
-                                        del currPass
+                                    print("\nChoose what do you want to update/set:\n[1]Address,[2]Phone number,[3]Email,[4]Company")
+                                    change=input()
+                                    if change=="1":
+                                        queryExecutor.execute(f"SELECT address FROM accounts WHERE id={id[0]}")
+                                        currAddr=queryExecutor.fetchone()
+                                        if currAddr[0]!="Not stated":
+                                            print(f"\nYour current address is: {currAddr[0]}\n")
                                         while True:
-                                            newPass=input("Enter your new password: ")
-                                            if len(newPass)<4:
-                                                print("\nYour password is too short. It must be at least 4 symbols long.\n")
+                                            newAddr=input("Set your new address: ")
+                                            if len(newAddr)<2 or len(newAddr)>100:
+                                                print("\nInvalid address\n")
+                                                continue
+                                            elif newAddr=="None" or newAddr=="":
+                                                print("Your address has been removed.")
+                                                if newAddr!="Not stated":
+                                                    queryExecutor.execute(f"UPDATE accounts SET address='Not stated' WHERE id={id[0]}")
+                                                    db_connection.commit()
+                                            else:
+                                                queryExecutor.execute(f"UPDATE accounts SET address='{newAddr}' WHERE id={id[0]}")
+                                                db_connection.commit()
+                                                print("\nYour address has been updated\n")
+                                                proceed=input()
+                                                break
+                                    elif change=="2":
+                                        queryExecutor.execute(f"SELECT telephone FROM accounts WHERE id={id[0]}")
+                                        currTel=queryExecutor.fetchone()
+                                        if currTel[0]!="Not stated":
+                                            print(f"Your current phone number is: {currTel[0]}")
+                                        while True:
+                                            newTel=input("Set your new phone number: ")
+                                            if not len(newTel)==10:
+                                                print("\nThe given phone number is invalid.\n")
+                                            elif newTel=="None" or newTel=="":
+                                                print("Your phone number has been removed.")
+                                                if newTel!="Not stated":
+                                                    queryExecutor.execute(f"UPDATE accounts SET telephone='Not stated' WHERE id={id[0]}")
+                                                    db_connection.commit()
+                                            else:
+                                                queryExecutor.execute(f"UPDATE accounts SET telephone='{newTel}' WHERE id={id[0]}")
+                                                db_connection.commit()
+                                                print("\nYour phone number has been changed.\n")
+                                                break
+                                    elif change=="3":
+                                        queryExecutor.execute(f"SELECT email FROM accounts WHERE id={id[0]}")
+                                        currEmail=queryExecutor.fetchone()
+                                        print(f"\nYour current email is: {currEmail[0]}\n")
+                                        while True:
+                                            newEmail=input("Set your new email: ")
+                                            if not "@" in newEmail or not "." in newEmail or len(newEmail)>60 or len(newEmail)==0:
+                                                print("\nInvalid email\n")
                                                 continue
                                             else:
-                                                times=0;
-                                                while True:
-                                                    if times==3:
-                                                        print("\nTry setting your new password again\n")
-                                                        break
-                                                    confirm=input("Confirm your new password: ")
-                                                    if confirm!=newPass:
-                                                        print("\nPasswords do not match! Try again.\n")
-                                                        times+=1
-                                                        continue
-                                                    else:
-                                                        print("\nYour password has been changed!\n")
-                                                        success=True
-                                                        break
-                                                if success==True:
-                                                    break
-                                    if success == True:
+                                                queryExecutor.execute(f"UPDATE accounts SET email='{newEmail}' WHERE id={id[0]}")
+                                                db_connection.commit()
+                                                print("Your email has been changed.")
+                                    elif change=="4":
+                                        queryExecutor.execute(f"SELECT company FROM accounts WHERE id={id[0]}")
+                                        currComp=queryExecutor.fetchone()
+                                        if currComp!="None":
+                                            print(f"Your current set company name is: {currComp[0]}")
+                                        while True:
+                                            newComp=input("Update the name of your company: ")
+                                            if len(newComp)>30:
+                                                print("\nEnter a valid company name\n")
+                                            elif newComp=="None" or newComp=="":
+                                                print("Your company name has been removed.")
+                                                if currComp!="Not stated":
+                                                    queryExecutor.execute(f"UPDATE accounts SET company='Not stated' WHERE id={id[0]}")
+                                                    db_connection.commit()
+                                            else:
+                                                queryExecutor.execute(f"UPDATE accounts SET company='{newComp}' WHERE id={id[0]}")
+                                                db_connection.commit()
+                                                print("\nYour company name has been updated\n")
+                                                break
+                                    elif change=="Return" or change=="return":
                                         break
-                            elif option2=="3":
-                                pass
-                                #TODO
-                            if failedToVerify==True:
                                 break
-
-
-
-
+                            elif option2=="Return" or option2=="return":
+                                returnBack=True
+                                break
+        elif option=="2":
+            times=0
+            while True:
+                success = False
+                if times==3:
+                    print("\nYou have failed to verify your access. Please try again later.\n")
+                    break
+                passw=input("Enter your current password to verify your access to account data: ")
+                passw=passw.encode(); passw=hashlib.sha256(passw); passw=passw.hexdigest()
+                queryExecutor.execute(f"SELECT password FROM accounts WHERE id={id[0]}")
+                currPass=queryExecutor.fetchone()
+                if passw!=currPass[0]:
+                    print("\nIncorrect password\n")
+                    times+=1
+                    del currPass
+                    continue
+                else:
+                    del currPass
+                    while True:
+                        newPass=input("Enter your new password: ")
+                        if len(newPass)<4:
+                            print("\nYour password is too short. It must be at least 4 symbols long.\n")
+                            continue
+                        else:
+                            times=0
+                            while True:
+                                if times==3:
+                                    print("\nTry setting your new password again\n")
+                                    break
+                                confirm=input("Confirm your new password: ")
+                                if confirm!=newPass:
+                                    print("\nPasswords do not match! Try again.\n")
+                                    times+=1
+                                    continue
+                                else:
+                                    newPass=newPass.encode(); newPass=hashlib.sha256(newPass); newPass=newPass.hexdigest()
+                                    queryExecutor.execute(f"UPDATE accounts set password='{newPass}' WHERE id={id[0]}")
+                                    db_connection.commit()
+                                    print("\nYour password has been changed!\n")
+                                    success=True
+                                    break
+                            if success==True or failedToVerify==True:
+                                break
+                    if success == True or failedToVerify==True:
+                        break
+        elif option=="3":
+            times=0; deletedAccount=False
+            while True:
+                if times==3:
+                    print("\nVerification failed. Try again later!\n")
+                    returnBack=True
+                    break
+                passw=input("Enter your password to confirm it is you taking that action: ")
+                queryExecutor.execute(f"SELECT password FROM accounts WHERE id={id[0]} ")
+                currPass=queryExecutor.fetchone()
+                passw=passw.encode(); passw=hashlib.sha256(passw); passw=passw.hexdigest()
+                if passw!=currPass[0]:
+                    times+=1
+                    print("\nIncorrect password\n")
+                    continue
+                else:
+                    print("\n---Please Read!---\nIf proceed deleting your account, all data associated with it will be removed, that includes - All personal information, all offers posted by you, your orders and opened support tickets.\nIf you'd like to delete your account permanently, please enter the following below - 'I wish to delete my account'. If you have changed your mind enter - 'Return'.")
+                    while True:
+                        confirmation=input("- ")
+                        if confirmation=="I wish to delete my account":
+                            print("\nYour account and all associated data with it has been deleted.\n")
+                            proceed=input()
+                            deletedAccount=True
+                            break
+                        elif confirmation=="Return" or confirmation=="return":
+                            break
+                        else:
+                            print("\nCannot understand that. Try again.\n")
+                            continue
+                    if deletedAccount==True:
+                        main(True)
+                    else:
+                        break
+        elif option=="Return" or option=="return":
+            main()
         else:
             continue
     AccountSettings()
 
-def main():
+def main(deletedAccount=False):
     global loginStatus
+    if connectionFailure==True:
+        return -1
     if loginStatus==True:
+        if deletedAccount == True:
+            queryExecutor.execute(f"DELETE FROM accounts WHERE id={id[0]}")
+            queryExecutor.execute(f"DELETE FROM myoffers WHERE accountId={id[0]}")
+            queryExecutor.execute(f"DELETE FROM mailsystem WHERE accountId={id[0]}")
+            queryExecutor.execute(f"DELETE FROM namechanges WHERE accountId={id[0]}")
+            queryExecutor.execute(f"DELETE FROM offerpostings WHERE accountId={id[0]}")
+            queryExecutor.execute(f"DELETE FROM postbox WHERE sentFrom='{username[0]}'")
+            queryExecutor.execute(f"DELETE FROM usernotifications WHERE accountId={id[0]}")
+            queryExecutor.execute(f"DELETE FROM userorders WHERE accountId={id[0]}")
+            db_connection.commit()
+            loginStatus = False
+            main()
+        class AccountData:
+            accName=username[0]; accId=id[0]
         queryExecutor.execute(f"SELECT * FROM usernotifications WHERE accountId={id[0]}")
         notifications=queryExecutor.fetchall()
         if len(notifications)>0:
@@ -874,8 +1033,6 @@ def main():
             greeting="Good evening"
         else:
             greeting="Hello"
-        class AccountData:
-            accName=username[0]; accId=id[0]
     else:
         greeting="Hello"
     print("       Ed's Car Dealership\n")
@@ -1012,6 +1169,7 @@ def main():
         elif option=="7":
             if loginStatus==False:
                 RegisterAccount()
+                main()
             else:
                 print("\n\n--Notifications--\n")
                 receiveNotifications=""
@@ -1038,8 +1196,6 @@ def main():
                 loginStatus=False
                 main()
             else:
-                print("\n\n\n\n\n\n")
-                RegisterAccount()
                 main()
         else:
             continue
