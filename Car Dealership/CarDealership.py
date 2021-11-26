@@ -80,7 +80,7 @@ def listCurrentCarOffers():
 
     currentTime=time.localtime()
     print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
-    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType,offerpostings.yearProd, offerpostings.offerPrice, offerpostings.datePosted FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId limit 15")
+    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType,offerpostings.yearProd, offerpostings.offerPrice, offerpostings.datePosted FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId and not offerpostings.comments='[THISOFFERISCURRENTLYDELISTED]' limit 15")
     offers=queryExecutor.fetchall()
     offer="№: / By: / Offer id: / Title: / Description:     / Type: / Fuel Type: / Drive Type: / Production Year: / Price:  / Posted:\n\n"
     for k in range(0,len(offers)):
@@ -486,16 +486,22 @@ def MyOffers(id):
     print(f"You have posted {len(myoffers)} offers")
     output="№:           |      Title:           |  Offer ID:     |     Price:     |   Posted:        |   Status:\n"
     for k in range(0,len(myoffers)):
+        output+=f"{k+1}           "
         for j in range(0,len(myoffers[k])):
             output+=str(myoffers[k][j])+"       "
         if k!=len(myoffers)-1:
             output+="\n№:           |      Title:           |  Offer ID:     |     Price:     |   Posted:        |   Status:\n"
     print(output)
     print("\n[1]I wish to manage my offers   |   [2]Return\n")
+    getBack=False
     while True:
+        if getBack == True:
+            break
         option=input("- ")
         if option=="1":
             while True:
+                if getBack==True:
+                    break
                 option2=input("Choose an offer from your list by number: ")
                 if option2=="Return" or option2=="return":
                     break
@@ -503,15 +509,116 @@ def MyOffers(id):
                     print("\nCouldn't find an offer with the given number.\n")
                     continue
                 else:
+                    print("\n")
                     n=int(option2)-1
+                    output2=""
                     pickedOffer=myoffers[n]
-                    print(pickedOffer)
-                    test=input()
-                #testing
+                    for k in range(0,len(pickedOffer)):
+                        output2+=str(pickedOffer[k])+"   "
+                    print(output2)
+                    while True:
+                        if getBack == True:
+                            break
+                        print("\n[1]Change status of this offer  |   [2]Delete this offer   |   [3]Change offer's price   |   [4]Add additional notes   |   [5]Return\n")
+                        manageOpt=input("- ")
+                        if manageOpt=="1":
+                            print("\nChoose status for your offer('List','Delist','Remove ordered label'):\n ")
+                            while True:
+                                status=input()
+                                if status=="List" or status=="list":
+                                    if pickedOffer[4]=="Listed":
+                                        print("\nYour offer is already listed!\n")
+                                        break
+                                    currTime=time.localtime(); t=f"{currTime.tm_mday}.{currTime.tm_mon}.{currTime.tm_year} {currTime.tm_hour}:{currTime.tm_min}"
+                                    queryExecutor.execute(f"UPDATE myoffers SET status='Listed' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                    queryExecutor.execute(f"UPDATE offerpostings SET comments='',datePosted='{t}' WHERE offerId={pickedOffer[1]}")
+                                    db_connection.commit()
+                                    print("\nOffer's status has been set to - 'Listed'\n")
+                                    proceed=input()
+                                    break
+                                elif "Delist" in status or "delist" in status:
+                                    if pickedOffer[4]=="Delisted":
+                                        print("\nYour offer is already delisted!\n")
+                                        break
+                                    queryExecutor.execute(f"UPDATE myoffers SET status='Delisted' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                    queryExecutor.execute(f"UPDATE offerpostings SET comments='[THISOFFERISCURRENTLYDELISTED]' WHERE offerId={pickedOffer[1]}")
+                                    db_connection.commit()
+                                    print("\nYour offer has been removed from public list and set to - 'Delisted'. You can now delete it or repost it if you wish to do so.\n")
+                                    proceed=input()
+                                    break
+                                elif status=="Remove ordered label" or status=="remove ordered label" or status=="Remove Ordered Label":
+                                    queryExecutor.execute(f"UPDATE myoffers SET status='Listed' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                    db_connection.commit()
+                                    print("\nOrdered label removed and status reverted to - 'Listed'\n")
+                                    proceed=input()
+                                    break
+                                else:
+                                    continue
+                            continue
+                        elif manageOpt=="2":
+                            confirm=input("Confirm you want to delete this offer[Y/N]")
+                            if confirm=="Y" or confirm=="y":
+                                queryExecutor.execute(f"DELETE FROM myoffers WHERE accountId={id} and offerId={pickedOffer[1]} LIMIT 1")
+                                queryExecutor.execute(f"DELETE FROM offerpostings WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                print(f"\nOffer {pickedOffer[1]} has been deleted.\n")
+                                proceed=input()
+                        elif manageOpt=="3":
+                            queryExecutor.execute(f"SELECT askPrice FROM myoffers WHERE accountId={id} and offerId={pickedOffer[1]}")
+                            currPrice=queryExecutor.fetchone()
+                            if currPrice[0]!="Contact user for price details":
+                                print(f"\nCurrent price: {currPrice[0]}\n")
+                            newPrice=input("Set new price - ")
+                            if newPrice=="" or newPrice.isdigit()==False:
+                                queryExecutor.execute(f"UPDATE myoffers SET askPrice='Contact user for price details' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                queryExecutor.execute(f"UPDATE offerpostings SET offerPrice='Contact user for price details' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                print("\nPrice was set to 'Contact user for price details'\n")
+                                proceed=input()
+                            else:
+                                newPrice+="$"
+                                queryExecutor.execute(f"UPDATE myoffers SET askPrice='{newPrice}' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                queryExecutor.execute(f"UPDATE offerpostings SET offerPrice='{newPrice}' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                print("\nOffer's price has been updated.\n")
+                                proceed=input()
+                            db_connection.commit()
+                        elif manageOpt=="4":
+                            queryExecutor.execute("SELECT * FROM reservednames")
+                            blockedWords=queryExecutor.fetchall(); profanitiesDetected=False
+                            print("\nUpdate your additional information to this offer:\n")
+                            copyTxt=""
+                            while True:
+                                if len(copyTxt)>0:
+                                    print(f"\nYour tried to submit the following:\n{copyTxt}")
+                                comments=input("- ")
+                                for k in range(0,len(blockedWords)):
+                                    if blockedWords[k][0] in comments:
+                                        profanitiesDetected=True
+                                        print("\nCannot add this. Your text contains profanities or other sensitive information that is not allowed.\n")
+                                        proceed=input()
+                                        break
+                                if profanitiesDetected==False:
+                                    if len(comments)>100:
+                                        print("\nYour text exceeds the limitation of 100 symbols. Please edit your text.\n")
+                                        copyTxt=comments
+                                        continue
+                                    elif len(comments)==0:
+                                        print("\nYour notes to the offer have been updated\n")
+                                        queryExecutor.execute(f"UPDATE offerpostings SET comments='' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                        db_connection.commit()
+                                        break
+                                    else:
+                                        print("\nYour notes to the offer have been updated\n")
+                                        queryExecutor.execute(f"UPDATE offerpostings SET comments='{comments}' WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                        db_connection.commit()
+                                        break
+                        elif manageOpt=="5":
+                            getBack=True
+                        continue
+
         elif option=="2":
             return 0
         else:
             continue
+    MyOffers(id)
 
 def mailbox():
     def SendMessage():
