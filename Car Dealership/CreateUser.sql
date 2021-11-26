@@ -1,4 +1,4 @@
-CREATE USER 'admin2'@'localhost' IDENTIFIED BY 'admin';
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
 
 GRANT SELECT,INSERT,UPDATE,DELETE ON accounts TO 'admin'@'localhost';
 GRANT SELECT,INSERT,UPDATE,DELETE ON offerPostings TO 'admin'@'localhost';
