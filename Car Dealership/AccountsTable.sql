@@ -5,8 +5,8 @@ PASSWORD VARCHAR(100) NOT NULL,
 email VARCHAR(60) NOT NULL,
 dateCreated VARCHAR(10) NOT NULL,
 rating DOUBLE DEFAULT '0.00',
-address VARCHAR(100) DEFAULT 'Not stated',
+address VARCHAR(60) DEFAULT 'Not stated',
 telephone VARCHAR(10) DEFAULT 'Not stated',
 company VARCHAR(30) DEFAULT 'None',
-accountFlags INT DEFAULT 0
+accountFlags VARCHAR(500)
 );
