@@ -9,6 +9,6 @@ driveType VARCHAR(10)NOT NULL,
 yearProd VARCHAR(10)NOT NULL,
 offerPrice VARCHAR(30) NOT NULL,
 datePosted VARCHAR(20) NOT NULL,
-comments VARCHAR(20)NOT NULL,
+comments VARCHAR(200)NOT NULL,
 specialflags VARCHAR(200)
 );
