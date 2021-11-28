@@ -8,5 +8,5 @@ rating DOUBLE DEFAULT '0.00',
 address VARCHAR(60) DEFAULT 'Not stated',
 telephone VARCHAR(10) DEFAULT 'Not stated',
 company VARCHAR(30) DEFAULT 'None',
-accountFlags VARCHAR(500)
+accountFlags VARCHAR(500) DEFAULT '[HideAddress][HidePhone][HideCompany]'
 );
