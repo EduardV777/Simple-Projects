@@ -22,7 +22,6 @@ def listCurrentCarOffers():
 
         if loginStatus==False:
             print("You can't view any additional information about this user and their offer, unless you log in your account.")
-            print("Proceed?")
             proceed=input("- ")
         else:
             while True:
@@ -80,9 +79,9 @@ def listCurrentCarOffers():
 
     currentTime=time.localtime()
     print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
-    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType,offerpostings.yearProd, offerpostings.offerPrice, offerpostings.datePosted FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId and not offerpostings.comments='[THISOFFERISCURRENTLYDELISTED]' limit 15")
+    queryExecutor.execute("SELECT accounts.username, offerpostings.offerId, offerpostings.title, offerpostings.description, offerpostings.TYPE, offerpostings.fuelType, offerpostings.driveType,offerpostings.yearProd, offerpostings.offerPrice, offerpostings.datePosted, offerpostings.comments FROM accounts, offerpostings WHERE accounts.id=offerpostings.accountId and not offerpostings.specialflags='[THISOFFERISCURRENTLYDELISTED]' limit 15")
     offers=queryExecutor.fetchall()
-    offer="№: / By: / Offer id: / Title: / Description:     / Type: / Fuel Type: / Drive Type: / Production Year: / Price:  / Posted:\n\n"
+    offer="№: / By: / Offer id: / Title: / Description:     / Type: / Fuel Type: / Drive Type: / Production Year: / Price:  / Posted:       /   Additional notes:\n\n"
     for k in range(0,len(offers)):
         offer+=str(k+1)+" | "
         for j in range(0,len(offers[k])):
@@ -531,7 +530,7 @@ def MyOffers(id):
                                         break
                                     currTime=time.localtime(); t=f"{currTime.tm_mday}.{currTime.tm_mon}.{currTime.tm_year} {currTime.tm_hour}:{currTime.tm_min}"
                                     queryExecutor.execute(f"UPDATE myoffers SET status='Listed' WHERE accountId={id} and offerId={pickedOffer[1]}")
-                                    queryExecutor.execute(f"UPDATE offerpostings SET comments='',datePosted='{t}' WHERE offerId={pickedOffer[1]}")
+                                    queryExecutor.execute(f"UPDATE offerpostings SET specialflags='',datePosted='{t}' WHERE offerId={pickedOffer[1]}")
                                     db_connection.commit()
                                     print("\nOffer's status has been set to - 'Listed'\n")
                                     proceed=input()
@@ -541,7 +540,7 @@ def MyOffers(id):
                                         print("\nYour offer is already delisted!\n")
                                         break
                                     queryExecutor.execute(f"UPDATE myoffers SET status='Delisted' WHERE accountId={id} and offerId={pickedOffer[1]}")
-                                    queryExecutor.execute(f"UPDATE offerpostings SET comments='[THISOFFERISCURRENTLYDELISTED]' WHERE offerId={pickedOffer[1]}")
+                                    queryExecutor.execute(f"UPDATE offerpostings SET specialflags='[THISOFFERISCURRENTLYDELISTED]' WHERE offerId={pickedOffer[1]}")
                                     db_connection.commit()
                                     print("\nYour offer has been removed from public list and set to - 'Delisted'. You can now delete it or repost it if you wish to do so.\n")
                                     proceed=input()
@@ -560,8 +559,10 @@ def MyOffers(id):
                             if confirm=="Y" or confirm=="y":
                                 queryExecutor.execute(f"DELETE FROM myoffers WHERE accountId={id} and offerId={pickedOffer[1]} LIMIT 1")
                                 queryExecutor.execute(f"DELETE FROM offerpostings WHERE accountId={id} and offerId={pickedOffer[1]}")
+                                db_connection.commit()
                                 print(f"\nOffer {pickedOffer[1]} has been deleted.\n")
-                                proceed=input()
+                                proceed=input(); getBack=True
+                                break
                         elif manageOpt=="3":
                             queryExecutor.execute(f"SELECT askPrice FROM myoffers WHERE accountId={id} and offerId={pickedOffer[1]}")
                             currPrice=queryExecutor.fetchone()
@@ -922,7 +923,7 @@ def AccountSettings():
                         print("-----Profile data-----\n")
                         queryExecutor.execute(f"SELECT * FROM accounts WHERE id={id[0]}")
                         accountData=queryExecutor.fetchone()
-                        print(f"This account was created: {accountData[4]}\n\nUsername: {username[0]}\n\nE-mail: {accountData[3]}\n\nAccount rating(Based on user rates): {accountData[5]}\n\nAddress: {accountData[6]}\n\nPhone number: {accountData[7]}\n\nCompany:{accountData[8]}\n[1]Change your username  |  [2]Change your contact information\n")
+                        print(f"This account was created: {accountData[4]}\n\nUsername: {username[0]}\n\nE-mail: {accountData[3]}\n\nAccount rating(Based on user rates): {accountData[5]}\n\nAddress: {accountData[6]}\n\nPhone number: {accountData[7]}\n\nCompany:{accountData[8]}\n[1]Change your username  |  [2]Change your contact information  |  [3]Privacy settings\n")
                         alreadyRequested=False
                         while True:
                             failedToVerify = False
@@ -1045,6 +1046,159 @@ def AccountSettings():
                                     elif change=="Return" or change=="return":
                                         break
                                 break
+                            elif option2=="3":
+                                print("\nHere you can set what contact information can be seen by other users\n")
+                                while True:
+                                    queryExecutor.execute(f"SELECT accountFlags FROM accounts WHERE id={id[0]}")
+                                    accountFlags = queryExecutor.fetchone()
+                                    print("\nCurrently:\n")
+                                    if "[HideEmail]" in accountFlags[0]:
+                                        print("\nYour email is: Hidden\n")
+                                    else:
+                                        print("\nYour email is: Visible\n")
+                                    if "[HideAddress]" in accountFlags[0]:
+                                        print("\nYour address is: Hidden\n")
+                                    else:
+                                        print("\nYour address is: Visible\n")
+                                    if "[HidePhone]" in accountFlags[0]:
+                                        print("\nYour phone number is: Hidden\n")
+                                    else:
+                                        print("\nYour phone number is: Visible\n")
+                                    if "[HideCompany]" in accountFlags[0]:
+                                        print("\nYour company name is: Hidden\n")
+                                    else:
+                                        print("\nYour company name is: Visible\n")
+                                    settingChanged=False
+                                    while True:
+                                        if settingChanged==True:
+                                            break
+                                        setting=input("Choose a certain setting by name('Phone','Company','Address','Email'): ")
+                                        if setting=="Email" or setting=="Company" or setting=="Address" or setting=="Phone":
+                                            print("\n1 - Show | 2 - Hide\n")
+                                            while True:
+                                                privacyChoice=input("- ")
+                                                if privacyChoice=="1":
+                                                    if setting=="Email":
+                                                        accountFlagsList=[]; k=0
+                                                        while k<len(accountFlags[0]):
+                                                            if accountFlags[0][k]=="[":
+                                                                val=""
+                                                                for j in range(k,len(accountFlags[0])):
+                                                                    if accountFlags[0][j]!="]":
+                                                                        val+=accountFlags[0][j]
+                                                                        k+=1
+                                                                    else:
+                                                                        val+=accountFlags[0][j]
+                                                                        accountFlagsList.append(val)
+                                                                        k+=1
+                                                                        break
+                                                            else:
+                                                                k+=1
+                                                        try:
+                                                            index=accountFlagsList.index("[HideEmail]")
+                                                            del accountFlagsList[index]
+                                                            newAccountFlags = "".join(accountFlagsList)
+                                                            queryExecutor.execute(f"UPDATE accounts SET accountFlags='{newAccountFlags}' WHERE id={id[0]} LIMIT 1")
+                                                            db_connection.commit()
+                                                            print("\nYour email is now visible\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                        except:
+                                                            print("\nYour email is now visible.\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                    elif setting=="Address":
+                                                        accountFlagsList=[]; k=0
+                                                        while k<len(accountFlags[0]):
+                                                            if accountFlags[0][k]=="[":
+                                                                val=""
+                                                                for j in range(k,len(accountFlags[0])):
+                                                                    if accountFlags[0][j]!="]":
+                                                                        val+=accountFlags[0][j]
+                                                                        k+=1
+                                                                    else:
+                                                                        val+=accountFlags[0][j]
+                                                                        accountFlagsList.append(val)
+                                                                        k+=1
+                                                                        break
+                                                            else:
+                                                                k+=1
+                                                        try:
+                                                            index=accountFlagsList.index("[HideAddress]")
+                                                            del accountFlagsList[index]
+                                                            newAccountFlags="".join(accountFlags)
+                                                            queryExecutor.execute(f"UPDATE accounts SET accountFlags='{newAccountFlags}' WHERE id={id[0]} LIMIT 1")
+                                                            db_connection.commit()
+                                                            print("\nYour address is now visible\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                        except:
+                                                            print("\nYour address is now visible\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                    elif setting=="Phone":
+                                                        accountFlagsList=[]; k=0
+                                                        while k<len(accountFlags[0]):
+                                                            if accountFlags[0][k]=="[":
+                                                                val=""
+                                                                for j in range(k,len(accountFlags[0])):
+                                                                    if accountFlags[0][j]!="]":
+                                                                        val+=accountFlags[0][j]
+                                                                        k+=1
+                                                                    else:
+                                                                        val += accountFlags[0][j]
+                                                                        k+=1
+                                                                        accountFlagsList.append(val)
+                                                                        break
+                                                            else:
+                                                                k+=1
+                                                        print(accountFlags)
+                                                        try:
+                                                            index=accountFlagsList.index("[HidePhone]")
+                                                            del accountFlagsList[index]
+                                                            newAccountFlags="".join(accountFlagsList)
+                                                            queryExecutor.execute(f"UPDATE accounts SET accountFlags='{newAccountFlags}' WHERE id={id[0]} LIMIT 1")
+                                                            db_connection.commit()
+                                                            print("\nYour phone number is now visible\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                        except:
+                                                            print("\nYour phone number is now visible\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                    elif setting=="Company":
+                                                        accountFlagsList=[]; k=0
+                                                        while k<len(accountFlags[0]):
+                                                            if accountFlags[0][k]=="[":
+                                                                val=""
+                                                                for j in range(k,len(accountFlags[0])):
+                                                                    if accountFlags[0][j]!="]":
+                                                                        val+=accountFlags[0][j]
+                                                                        k+=1
+                                                                    else:
+                                                                        val += accountFlags[0][j]
+                                                                        k+=1
+                                                                        accountFlagsList.append(val)
+                                                                        break
+                                                            else:
+                                                                k+=1
+                                                        try:
+                                                            index=accountFlagsList.index("[HideCompany]")
+                                                            del accountFlagsList[index]
+                                                            newAccountFlags="".join(accountFlagsList)
+                                                            queryExecutor.execute(f"UPDATE accounts SET accountFlags='{newAccountFlags}' WHERE id={id[0]} LIMIT 1")
+                                                            db_connection.commit()
+                                                            print("\nYour company name is now visible.\n")
+                                                            proceed=input(); settingChanged=True
+                                                            break
+                                                        except:
+                                                            print("\nYour company name is now visible.\n")
+                                                            proceed=input(); settingChanged = True
+                                                            break
+                                                if privacyChoice=="2":
+                                                    #to hide
+                                                    pass
+
                             elif option2=="Return" or option2=="return":
                                 returnBack=True
                                 break
