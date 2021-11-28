@@ -7,7 +7,8 @@ TYPE VARCHAR(30) NOT NULL,
 fuelType VARCHAR(30) NOT NULL,
 driveType VARCHAR(10)NOT NULL,
 yearProd VARCHAR(10)NOT NULL,
-offerPrice VARCHAR(30) DEFAULT 'Contact user for price details',
+offerPrice VARCHAR(30) NOT NULL,
 datePosted VARCHAR(20) NOT NULL,
-comments VARCHAR(100) NOT NULL
+comments VARCHAR(20)NOT NULL,
+specialflags VARCHAR(200)
 );
