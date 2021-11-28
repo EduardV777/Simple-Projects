@@ -24,8 +24,12 @@ def listCurrentCarOffers():
             print("You can't view any additional information about this user and their offer, unless you log in your account.")
             proceed=input("- ")
         else:
+            noContactsAvailable=False
             while True:
-                choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Order Now\n[4] - Return\n- ")
+                if noContactsAvailable==False:
+                    choice=input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Order Now\n[4] - Return\n- ")
+                else:
+                    choice = input("\n[1] - Reveal seller's contact info\n[2] - View seller's rating\n[3] - Order Now\n[4] - Return\n[5]Contact through our platform\n- ")
                 if choice=="1":
                     a=round(1+random.random()*11); b=round(1+random.random()*11); res=a+b
                     print(f"Confirm you are human: {a}+{b}=?")
@@ -43,14 +47,30 @@ def listCurrentCarOffers():
                         queryExecutor.execute(f"SELECT company FROM accounts where username='{sellerName}'")
                         company=queryExecutor.fetchone()
                         print(f"Contact information for seller:\n")
-                        if company[0]!="None":
-                            print(f"Company: {company[0]}")
-                        print(f"E-mail: {email[0]}")
-                        if phone[0]!="Not stated":
-                            print(f"Phone: {phone[0]}")
-                        if address[0]!="Not stated":
-                            print(f"Address: {address}")
-                            proceed=input(" - ")
+                        queryExecutor.execute(f"SELECT accountFlags FROM accounts WHERE username='{sellerName}'")
+                        sellerPrivacySettings=queryExecutor.fetchone()
+                        if not "[HideCompany]" in sellerPrivacySettings[0]:
+                            if company[0]!="None":
+                                print(f"Company: {company[0]}")
+                        else:
+                            print(f"{sellerName} has preferred not show company name publicly.")
+                        if not "[HideEmail]" in sellerPrivacySettings[0]:
+                            print(f"E-mail: {email[0]}")
+                        else:
+                            print(f"{sellerName} has preferred not to show their email publicly.")
+                        if not "[HidePhone]" in sellerPrivacySettings[0]:
+                            if phone[0]!="Not stated":
+                                print(f"Phone: {phone[0]}")
+                        else:
+                            print(f"{sellerName} has preferred not to show their phone number publicly.")
+                        if not "[HideAddress]" in sellerPrivacySettings[0]:
+                            if address[0]!="Not stated":
+                                print(f"Address: {address}")
+                                proceed=input(" - ")
+                        else:
+                            print(f"{sellerName} has preferred not to show their address publicly.")
+                        if "[HideEmail]" in sellerPrivacySettings[0] and "[HidePhone]" in sellerPrivacySettings[0] and "[HideAddress]" in sellerPrivacySettings[0] and "[HideCompany]" in sellerPrivacySettings[0]:
+                            noContactsAvailable=True
                 elif choice=="2":
                     queryExecutor.execute(f"SELECT rating FROM accounts WHERE username='{sellerName}'")
                     rating=queryExecutor.fetchone()
@@ -76,6 +96,9 @@ def listCurrentCarOffers():
                             pass
                 elif choice=="4":
                     return 0
+                elif choice=="5":
+                    if noContactsAvailable==True:
+                        mailbox(True,sellerName)
 
     currentTime=time.localtime()
     print(f"\n\n---------LIST OF CURRENT CAR OFFERS POSTED HERE({currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min})---------")
@@ -621,11 +644,12 @@ def MyOffers(id):
             continue
     MyOffers(id)
 
-def mailbox():
-    def SendMessage():
+def mailbox(expressReference=False, recipient=""):
+    def SendMessage(recipient=""):
         while True:
             match=False
-            recipient=input("Recipient: ")
+            if recipient=="":
+                recipient=input("Recipient: ")
             queryExecutor.execute("SELECT username FROM accounts")
             usersList=queryExecutor.fetchall()
             for k in range(0,len(usersList)):
@@ -633,6 +657,9 @@ def mailbox():
                     match=True
                     break
             if match==False:
+                if expressReference==True:
+                    print("\nThis user no longer exists or their access is restricted.\n")
+                    return 0
                 print("\nNo user found with this name.\n")
                 continue
             else:
@@ -665,7 +692,9 @@ def mailbox():
         db_connection.commit()
         print("\nMessage sent!\n")
         proceed=input()
-
+    if expressReference==True:
+        SendMessage(recipient)
+        return 0
     print("\n---Your mailbox---")
     queryExecutor.execute(f"SELECT * FROM mailsystem WHERE (sender='{username[0]}' and msgN=0) and accountId={id[0]}")
     sentMessages=queryExecutor.fetchall()
@@ -1315,8 +1344,6 @@ def AccountSettings():
                                                             print("\nYour company name is now hidden.\n")
                                                             proceed=input(); settingChanged=True
                                                             break
-
-
                             elif option2=="Return" or option2=="return":
                                 returnBack=True
                                 break
@@ -1503,112 +1530,149 @@ def main(deletedAccount=False):
         greeting="Hello"
     print("       Ed's Car Dealership\n")
     if loginStatus==True:
-        print(f"{greeting}, {AccountData.accName}\n\n{alertStatus}\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Account details/settings | 7 - Check your notifications\n8 - Go to your mailbox | 9 - Log Off")
+        print(f"{greeting}, {AccountData.accName}\n\n{alertStatus}\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 5 - Send special request\n6 - Contact us\n7 - Account details/settings | 8 - Check your notifications\n9 - Go to your mailbox | 10 - Log Off")
     else:
         print("Hello, Guest\n\n1 - Check the current car offers | 2 - Check your offers\n3 - Post a car offer | 4 - Send special request\n5 - Contact us\n6 - Log in your account | 7 - Register Account")
-
     while True:
-        option=input("- ")
-        if option=="1":
-            listCurrentCarOffers()
-            main()
-        elif option=="2":
-            if loginStatus==False:
-                print("\nYou have to log in your account first.\n")
-            else:
-                MyOffers(id[0])
+            option=input("- ")
+            if option=="1":
+                listCurrentCarOffers()
                 main()
-        elif option=="3":
-            if loginStatus==False:
-                print("\nYou need to log in your account first.\n")
-            else:
-                postCarOffer()
-                main()
-        elif option=="4":
-            if loginStatus==False:
-                print("\nPlease log in your accounts or create one first.\n")
-                continue
-            else:
-                SpecialRequest()
-                main()
-        elif option=="5":
-            name=""
-            if loginStatus==False:
-                while True:
-                    sender=input("Introduce yourself: ")
-                    if len(sender)<1:
-                        continue
-                    else:
-                        name=sender
-                        break
-            else:
-                name=AccountData.accName
-            print("Title: \n")
-            title=input("- ")
-            if loginStatus==False:
-                print("Message(Please add information about how to contact you at the end):\n")
-            else:
-                print("Message:\n")
-            msg=input("- ")
-            print("Confirm you are not a robot:\n")
-            k=0
-            while k<3:
-                a = round(1 + random.random() * 15); b = round(1 + random.random() * 15); res = a + b
-                print(f"{a}+{b}=?")
-                userSol=input()
-                if int(userSol)!=res:
-                    print("\nFailed verification\n")
-                    k+=1
+            elif option=="2":
+                if loginStatus==False:
+                    print("\nYou have to log in your account first.\n")
                 else:
-                    break
-            if k==3:
-                print("Verification failed 3 times! Try again later.")
-                main()
-            else:
-                queryExecutor.execute(f"INSERT INTO postbox(sentFrom,title,message,category) VALUES('{name}','{title}','{msg}','FEEDBACK/SUPPORT REQUEST');")
-                db_connection.commit()
-                print("Message sent! Thank you for contacting us.\n\n")
-                proceed=input("Proceed?\n")
-                main()
-        elif option=="6":
-            if loginStatus==False:
-                print("\n\n\n\n\n\n")
-                if LogInAcc()==True:
-                    loginStatus=True
-                main()
-            else:
-                AccountSettings()
-        elif option=="7":
-            if loginStatus==False:
-                RegisterAccount()
-                main()
-            else:
-                print("\n\n--Notifications--\n")
-                receiveNotifications=""
-                if len(notifications)>0:
-                    for k in range(0,len(notifications)):
-                        for j in range(len(notifications[k])-1,0,-1):
-                            receiveNotifications+=notifications[k][j]+"   "
-                        receiveNotifications+="\n"
-                else:
-                    print("\nYou have no notifications to show.\n")
-                    proceed=input()
+                    MyOffers(id[0])
                     main()
-                queryExecutor.execute(f"DELETE FROM usernotifications WHERE accountId={id[0]}")
-                db_connection.commit()
-                print(receiveNotifications)
-                proceed=input()
-                main()
-        elif option=="8":
-            if loginStatus==True:
-                mailbox()
-        elif option=="9":
-            if loginStatus==True:
-                del AccountData
-                loginStatus=False
-                main()
+            elif option=="3":
+                if loginStatus==False:
+                    print("\nYou need to log in your account first.\n")
+                else:
+                    postCarOffer()
+                    main()
+            if loginStatus == False:
+                if option == "4":
+                    if loginStatus == False:
+                        print("\nPlease log in your accounts or create one first.\n")
+                        continue
+                elif option == "5":
+                    name = ""
+                    if loginStatus == False:
+                        while True:
+                            sender = input("Introduce yourself: ")
+                            if len(sender) < 1:
+                                continue
+                            else:
+                                name = sender
+                                break
+                    else:
+                        name = AccountData.accName
+                    print("Title: \n")
+                    title = input("- ")
+                    if loginStatus == False:
+                        print("Message(Please add information about how to contact you at the end):\n")
+                    else:
+                        print("Message:\n")
+                    msg = input("- ")
+                    print("Confirm you are not a robot:\n")
+                    k = 0
+                    while k < 3:
+                        a = round(1 + random.random() * 15);
+                        b = round(1 + random.random() * 15);
+                        res = a + b
+                        print(f"{a}+{b}=?")
+                        userSol = input()
+                        if int(userSol) != res:
+                            print("\nFailed verification\n")
+                            k += 1
+                        else:
+                            break
+                    if k == 3:
+                        print("Verification failed 3 times! Try again later.")
+                        main()
+                    else:
+                        queryExecutor.execute(f"INSERT INTO postbox(sentFrom,title,message,category) VALUES('{name}','{title}','{msg}','FEEDBACK/SUPPORT REQUEST');")
+                        db_connection.commit()
+                        print("Message sent! Thank you for contacting us.\n\n")
+                        proceed = input("Proceed?\n")
+                        main()
+                elif option == "6":
+                    if loginStatus == False:
+                        print("\n\n\n\n\n\n")
+                        if LogInAcc() == True:
+                            loginStatus = True
+                        main()
+                elif option == "7":
+                    RegisterAccount()
+                    main()
             else:
-                main()
-        else:
-            continue
+                if option=="5":
+                        SpecialRequest()
+                        main()
+                elif option=="6":
+                    name=""
+                    if loginStatus==False:
+                        while True:
+                            sender=input("Introduce yourself: ")
+                            if len(sender)<1:
+                                continue
+                            else:
+                                name=sender
+                                break
+                    else:
+                        name=AccountData.accName
+                    print("Title: \n")
+                    title=input("- ")
+                    if loginStatus==False:
+                        print("Message(Please add information about how to contact you at the end):\n")
+                    else:
+                        print("Message:\n")
+                    msg=input("- ")
+                    print("Confirm you are not a robot:\n")
+                    k=0
+                    while k<3:
+                        a = round(1 + random.random() * 15); b = round(1 + random.random() * 15); res = a + b
+                        print(f"{a}+{b}=?")
+                        userSol=input()
+                        if int(userSol)!=res:
+                            print("\nFailed verification\n")
+                            k+=1
+                        else:
+                            break
+                    if k==3:
+                        print("Verification failed 3 times! Try again later.")
+                        main()
+                    else:
+                        queryExecutor.execute(f"INSERT INTO postbox(sentFrom,title,message,category) VALUES('{name}','{title}','{msg}','FEEDBACK/SUPPORT REQUEST');")
+                        db_connection.commit()
+                        print("Message sent! Thank you for contacting us.\n\n")
+                        proceed=input("Proceed?\n")
+                        main()
+                elif option=="7":
+                    AccountSettings()
+                elif option=="8":
+                        print("\n\n--Notifications--\n")
+                        receiveNotifications=""
+                        if len(notifications)>0:
+                            for k in range(0,len(notifications)):
+                                for j in range(len(notifications[k])-1,0,-1):
+                                    receiveNotifications+=notifications[k][j]+"   "
+                                receiveNotifications+="\n"
+                        else:
+                            print("\nYou have no notifications to show.\n")
+                            proceed=input()
+                            main()
+                        queryExecutor.execute(f"DELETE FROM usernotifications WHERE accountId={id[0]}")
+                        db_connection.commit()
+                        print(receiveNotifications)
+                        proceed=input()
+                        main()
+                elif option=="9":
+                    mailbox()
+                elif option=="10":
+                    del AccountData
+                    loginStatus=False
+                    main()
+                else:
+                    continue
 main()
