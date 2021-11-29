@@ -12,5 +12,6 @@ posted VARCHAR(30) NOT NULL,
 ordered VARCHAR(20) NOT NULL,
 orderstatus VARCHAR(20) DEFAULT 'Unknown',
 SoldBy VARCHAR(20) NOT NULL,
-ExpectedDelivery VARCHAR(50)
+ExpectedDelivery VARCHAR(50),
+orderFlags VARCHAR(200) DEFAULT ''
 );
