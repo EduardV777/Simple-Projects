@@ -1,7 +1,8 @@
 CREATE TABLE myoffers(
-accountId INT PRIMARY KEY,
-offerId INT NOT NULL,
-askPrice VARCHAR(30) DEFAULT 'Discuss with customer',
+accountId INT NOT NULL,
+offerId INT PRIMARY KEY,
+askPrice VARCHAR(30) NOT NULL,
 posted VARCHAR(20) NOT NULL,
-status VARCHAR(20) DEFAULT 'Listed'
+status VARCHAR(20) DEFAULT 'Listed',
+flags VARCHAR(200) DEFAULT ''
 );
