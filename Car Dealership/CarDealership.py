@@ -973,7 +973,7 @@ def CheckMyOrders(id):
                         print("\nUser has been rated.\n")
                         proceed = input()
                         break
-                except TypeError:
+                except:
                     print("\nInvalid rating. Try again\n")
                     continue
         elif anyFinishedOrders==True and option=="4":
