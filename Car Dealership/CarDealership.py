@@ -29,7 +29,7 @@ def listCurrentCarOffers():
             offerChoice=queryExecutor.fetchone()
             queryExecutor.execute(f"SELECT username FROM accounts WHERE id={offerChoice[0]}")
             sellerName=queryExecutor.fetchone()
-            queryExecutor.execute(f"INSERT INTO userorders VALUES({uniqueId},{accountId},{offerId},'{offerChoice[2]}','{offerChoice[3]}','{offerChoice[4]}','{offerChoice[5]}','{offerChoice[6]}','{offerChoice[7]}','{offerChoice[8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING','{sellerName[0]}','Waiting for seller response')")
+            queryExecutor.execute(f"INSERT INTO userorders VALUES({uniqueId},{accountId},{offerId},'{offerChoice[2]}','{offerChoice[3]}','{offerChoice[4]}','{offerChoice[5]}','{offerChoice[6]}','{offerChoice[7]}','{offerChoice[8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING','{sellerName[0]}','Waiting for seller response','')")
             queryExecutor.execute(f"UPDATE myoffers SET status='Ordered' WHERE accountId={accId} AND offerId={offerId}")
             queryExecutor.execute(f"INSERT INTO usernotifications VALUES({accId},'[Ordered offer]User {username[0]} has ordered a car you offer - Offer ID[{offerId}]. You can contact them to discuss more about the order.','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}')")
             db_connection.commit()
@@ -87,20 +87,34 @@ def listCurrentCarOffers():
                         if "[HideEmail]" in sellerPrivacySettings[0] and "[HidePhone]" in sellerPrivacySettings[0] and "[HideAddress]" in sellerPrivacySettings[0] and "[HideCompany]" in sellerPrivacySettings[0]:
                             noContactsAvailable=True
                 elif choice=="2":
-                    queryExecutor.execute(f"SELECT rating FROM accounts WHERE username='{sellerName}'")
+                    queryExecutor.execute(f"SELECT rating, ratedBy FROM accounts WHERE username='{sellerName}'")
                     rating=queryExecutor.fetchone()
-                    print(f"\n{sellerName}'s current rating: {rating[0]}\n")
+                    try:
+                        avg=rating[0]/rating[1]
+                    except:
+                        avg="0.00"
+                    print(f"\n{sellerName}'s current rating: {avg}\n")
                     proceed=input()
                     continue
                 elif choice=="3":
                     queryExecutor.execute(f"SELECT offerId FROM myoffers where accountId={id[0]}")
-                    ids=queryExecutor.fetchall(); isThisMyOwnOffer=False
+                    ids=queryExecutor.fetchall(); isThisMyOwnOffer=False; isItAlreadyOrdered=False
+                    queryExecutor.execute(f"SELECT offerId FROM userOrders")
+                    orders=queryExecutor.fetchall()
                     for k in range(0,len(ids)):
                         if ids[k][0]==offerId:
                             print("\nThis is your own offer!\n")
+                            proceed=input()
                             isThisMyOwnOffer=True
                             break
+                    for k in range(0,len(orders)):
+                        if orders[k][0]==offerId:
+                            print("\nThis offer is currently ordered by someone else. You can try again later or contact the seller.\n")
+                            isItAlreadyOrdered=True
+                            proceed=input()
                     if isThisMyOwnOffer==True:
+                        continue
+                    elif isItAlreadyOrdered==True:
                         continue
                     else:
                         print("Are you sure you wish to order that car?[Y]/[N]\n")
@@ -425,7 +439,7 @@ def RegisterAccount():
         else:
             break
     currentTime=time.gmtime()
-    queryExecutor.execute(f"INSERT INTO accounts(username,PASSWORD,email, dateCreated) VAlUES('{username}','{passwordCrypted}','{email}','{currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year}');")
+    queryExecutor.execute(f"INSERT INTO accounts(username,PASSWORD,email, dateCreated, ratedUsers) VAlUES('{username}','{passwordCrypted}','{email}','{currentTime.tm_mday}/{currentTime.tm_mon}/{currentTime.tm_year}','');")
     db_connection.commit()
     print(f"\nYour account with username '{username}' has been created! You can now log in.\n")
     proceed=input()
@@ -605,8 +619,8 @@ def postCarOffer():
             continue
         else:
             break
-    queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,offerPrice,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{price}','{postingTime}','{comments}','');")
-    queryExecutor.execute(f"INSERT INTO myoffers VALUES({id[0]},{offerId},'{price}','{postingTime}','Listed')")
+    queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,offerPrice,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{price}','{postingTime}','{comments}');")
+    queryExecutor.execute(f"INSERT INTO myoffers(accountId,offerId,askPrice,posted,status) VALUES({id[0]},{offerId},'{price}','{postingTime}','Listed')")
     db_connection.commit()
     print(f"\nYour offer was successfully posted!\nOffer ID: {offerId}\n")
     proceed=input()
@@ -655,8 +669,11 @@ def MyOffers(id):
                         print("\n[1]Change status of this offer  |   [2]Delete this offer   |   [3]Change offer's price   |   [4]Add additional notes   |   [5]Return\n")
                         manageOpt=input("- ")
                         if manageOpt=="1":
-                            print("\nChoose status for your offer('List','Delist','Remove ordered label','Processing'):\n ")
+                            print("\nChoose status for your offer('List','Delist','Remove ordered label','Processing','Finished'):\n ")
+                            statusChanged=False
                             while True:
+                                if statusChanged==True:
+                                    break
                                 status=input("- ")
                                 if status=="List" or status=="list":
                                     if pickedOffer[4]=="Listed":
@@ -713,6 +730,7 @@ def MyOffers(id):
                                         buyerId=queryExecutor.fetchone()
                                         queryExecutor.execute(f"UPDATE myoffers SET status='Processing' WHERE offerId={pickedOffer[1]} and accountId={id}")
                                         queryExecutor.execute(f"UPDATE userorders SET orderstatus='Processing', ExpectedDelivery=\"{ED}\" WHERE offerId={pickedOffer[1]}")
+                                        queryExecutor.execute(f"UPDATE offerpostings SET specialflags='[THISOFFERISCURRENTLYDELISTED]' WHERE offerId={pickedOffer[1]}")
                                         queryExecutor.execute(f"INSERT INTO usernotifications VALUES({buyerId[0]},'[Order status] Order {orderId[0]} is in processing phase now.','{t}')")
                                         db_connection.commit()
                                         print("\nOrder's status is set to 'Processing' and customer who ordered this car is notified.\n")
@@ -721,10 +739,35 @@ def MyOffers(id):
                                     else:
                                         print("\nCannot do that. Your offer is still not ordered by anyone.\n")
                                         break
+                                elif status=="Finished" or status=="finished" or status=="FINISHED":
+                                    if pickedOffer[4]=="Processing":
+                                        currentTime = time.localtime(); t = f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+                                        queryExecutor.execute(f"SELECT accountId FROM userorders WHERE offerId={pickedOffer[1]}")
+                                        buyerId=queryExecutor.fetchone()
+                                        queryExecutor.execute(f"SELECT orderId FROM userorders WHERE offerId={pickedOffer[1]} and accountId={buyerId[0]}")
+                                        orderId=queryExecutor.fetchone()
+                                        queryExecutor.execute(f"UPDATE myoffers SET status='Finished' WHERE offerId={pickedOffer[1]} and accountId={id}")
+                                        queryExecutor.execute(f"UPDATE userorders SET orderstatus='Finished' WHERE offerId={pickedOffer[1]}")
+                                        queryExecutor.execute(f"INSERT INTO usernotifications VALUES({buyerId[0]},'[Order status] Your order [{orderId[0]}] has been finished. You can now rate the seller or report a problem.','{t}')")
+                                        db_connection.commit()
+                                        print("\nThis car is sold\n")
+                                        statusChanged=True
+                                        proceed=input()
+                                        continue
+                                    else:
+                                        print("\nThis offer is still not in processing stage. Please put into processing stage first.\n")
+                                        proceed=input()
+                                        continue
                                 else:
                                     continue
                             continue
                         elif manageOpt=="2":
+                            queryExecutor.execute(f"SELECT flags FROM myoffers WHERE offerId={pickedOffer[1]}")
+                            currentFlags=queryExecutor.fetchone()
+                            if "[REPORTED]" in currentFlags:
+                                print("\nYou cannot delete that offer right now as it is under administrative review. If you think this is a mistake contact us.\n")
+                                proceed=input(); getBack=True
+                                break
                             confirm=input("Confirm you want to delete this offer[Y/N]")
                             if confirm=="Y" or confirm=="y":
                                 queryExecutor.execute(f"DELETE FROM myoffers WHERE accountId={id} and offerId={pickedOffer[1]} LIMIT 1")
@@ -792,9 +835,52 @@ def MyOffers(id):
     MyOffers(id)
 
 def CheckMyOrders(id):
-    queryExecutor.execute(f"\nSELECT orderId,offerId,title,description,TYPE,fuelType,driveType,yearProd,posted,ordered,orderstatus,SoldBy,ExpectedDelivery FROM userorders WHERE accountId={id}\n")
+    def Report(orderId,offerId,reportedUser):
+        currentTime = time.localtime(); t = f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}"
+        name=username[0]
+        report=f"[REPORT TIME: {t}] [REPORT BY: {name}]  [REPORTED ORDER: {orderId}]    [REPORTED USER: {reportedUser}]"
+        while True:
+            title=input("Title:\n- ")
+            if len(title)<4:
+                print("\nTitle is too short to continue.\n")
+                continue
+            elif len(title)>100:
+                print("\nTitle is too long. It should not exceed 100 symbols.\n")
+                continue
+            else:
+                report+=f"Report Title:"
+                break
+        copyTxt=""
+        while True:
+            if len(copyTxt)>0:
+                print("\nYour previous text:")
+                print(copyTxt)
+                print("\n")
+            message=input("Report details(Please explain as much as possible about the problem so we can help you):\n- ")
+            if len(message)>5000:
+                copyTxt=message
+                print("\nYour report exceeds 5000 characters. Cannot proceed sending your report, please shorten your text.\n")
+                continue
+            elif len(message)<15:
+                print("\nYour report is too short.\n")
+                continue
+            else:
+                report+=f"  Report details: {message}"
+                queryExecutor.execute(f"UPDATE userorders SET orderFlags='[REPORTED]' WHERE orderId={orderId}")
+                queryExecutor.execute(f"UPDATE myoffers SET status='Being reviewed by administrator',flags='[REPORTED]' WHERE offerId={offerId}")
+                queryExecutor.execute(f"INSERT INTO postbox VALUES('{name}','{title}','{report}','REPORT')")
+                db_connection.commit()
+                print("\nReport has been sent. An administrator will review as soon as possible.\n")
+                proceed=input()
+                break
+        return 0
+
+    queryExecutor.execute(f"\nSELECT orderId,offerId,title,description,TYPE,fuelType,driveType,yearProd,posted,ordered,orderstatus,SoldBy,ExpectedDelivery,orderFlags FROM userorders WHERE accountId={id}\n")
     allOrders=queryExecutor.fetchall()
-    output=""
+    output=""; anyFinishedOrders=False
+    for k in range(0,len(allOrders)):
+        if allOrders[k][10]=="Finished":
+            anyFinishedOrders=True
     for k in range(0,len(allOrders)):
         output += str(k + 1)+" || "
         for j in range(0,len(allOrders[k])):
@@ -803,11 +889,18 @@ def CheckMyOrders(id):
     print("\nMy current orders:\n")
     print(output)
     returnBack=False; returnToBeginning=False
+    outputOptions="[1]Delete/Cancel order || [2]Return"
+    if anyFinishedOrders == True:
+        outputOptions += " || [3]Rate seller || [4]Report a problem with an order || [5]Delete all finished orders"
     while True:
-        print("[1]Delete/Cancel order || [2]Return")
+        print(outputOptions)
         option=input("- ")
         if option=="1":
             while True:
+                if len(allOrders)==0:
+                    print("\nYou have no orders.\n")
+                    proceed=input()
+                    break
                 try:
                     n=int(input("Choose order: "))
                 except:
@@ -837,6 +930,89 @@ def CheckMyOrders(id):
         elif option=="2":
             returnBack=True
             break
+        elif anyFinishedOrders==True and option=="3":
+            while True:
+                try:
+                    n=int(input("Pick one of your finished offers: "))
+                    n-=1
+                    if n>=len(allOrders) or n<0:
+                        print("\nInvalid choice.\n")
+                        continue
+                    elif allOrders[n][10]!='Finished':
+                        print("\nThis is not one of your finished orders\n")
+                        continue
+                    else:
+                        break
+                except:
+                    print("\nInvalid choice.\n")
+                    continue
+            sellerName=allOrders[n][11]; alreadyVoted=False
+            while True:
+                try:
+                    rating=float(input(f"Rate user {sellerName}(From 0.00 to 6.00): "))
+                    if rating<0.00 or rating>6.00:
+                        print("\nYour rating must be between 0.00 and 6.00 . Try again.\n")
+                        continue
+                    else:
+                        queryExecutor.execute(f"SELECT ratedUsers FROM accounts WHERE id={id}")
+                        ratedUsers=queryExecutor.fetchone()
+                        if sellerName in ratedUsers[0]:
+                            print("\nYou have already voted for this user.\n")
+                            alreadyVoted=True
+                            break
+                        if alreadyVoted==True:
+                            break
+                        queryExecutor.execute(f"SELECT rating FROM accounts WHERE username='{sellerName}'")
+                        sellerRating=queryExecutor.fetchone(); sellerRatingVar=sellerRating[0]; sellerRatingVar+=rating
+                        queryExecutor.execute(f"SELECT ratedBy FROM accounts WHERE username='{sellerName}'")
+                        ratedBy=queryExecutor.fetchone(); ratedByVar=ratedBy[0]; ratedByVar+=1
+                        queryExecutor.execute(f"SELECT ratedUsers FROM accounts WHERE id={id}")
+                        ratedUsers=queryExecutor.fetchone(); ratedUsersVar=ratedUsers[0]; ratedUsersVar+=f"{sellerName}"
+                        queryExecutor.execute(f"UPDATE accounts SET rating={sellerRatingVar} WHERE username='{sellerName}'"); queryExecutor.execute(f"UPDATE accounts SET ratedBy={ratedByVar} WHERE username='{sellerName}'"); queryExecutor.execute(f"UPDATE accounts SET ratedUsers='{ratedUsersVar}' WHERE id={id}")
+                        db_connection.commit()
+                        print("\nUser has been rated.\n")
+                        proceed = input()
+                        break
+                except:
+                    print("\nInvalid rating. Try again\n")
+                    continue
+        elif anyFinishedOrders==True and option=="4":
+            while True:
+                try:
+                    n=int(input("Choose an order you'd like to report: "))
+                    if n>len(allOrders) or n<0:
+                        print("\nInvalid choice.\n")
+                        continue
+                    else:
+                        reportedOrderN=allOrders[n-1][0]; reportedOfferN=allOrders[n-1][1]
+                        break
+                except:
+                    print("\nInvalid choice.\n")
+                    continue
+            offerFlags=allOrders[n-1][13]; sellerName=allOrders[n-1][11]
+            if '[REPORTED]' in offerFlags:
+                print("\nYou have already sent a report for that order!\n")
+                proceed=input()
+            else:
+                Report(reportedOrderN,reportedOfferN,sellerName)
+        elif anyFinishedOrders==True and option=="5":
+            confirm=input("Are you sure you want to perform that action?[Y/N]\n- ")
+            currentlyReviewedFound=False
+            for k in range(0,len(allOrders)):
+                if "[REPORTED]" in allOrders[k][13]:
+                    currentlyReviewedFound=True
+            if confirm=="Y" or confirm=="y":
+                queryExecutor.execute(f"DELETE FROM userorders WHERE (accountId={id} and orderstatus='Finished') and (not orderFlags='[REPORTED]')")
+                if currentlyReviewedFound==True:
+                    print("\nAll finished orders were cleared. Some orders are currently under review so they can't be deleted.\n")
+                    db_connection.commit()
+                    proceed = input(); returnToBeginning = True
+                    break
+                else:
+                    db_connection.commit()
+                    print("\nAll finished orders were cleared.\n")
+                    proceed=input(); returnToBeginning=True
+                    break
         if returnToBeginning==True:
             break
     if returnBack==True:
@@ -1714,6 +1890,14 @@ def main(deletedAccount=False):
             db_connection.commit()
             loginStatus = False
             main()
+        currentTime=time.localtime(); t=f"{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year}"
+        queryExecutor.execute(f"SELECT orderId, ExpectedDelivery, offerId FROM userorders WHERE accountId={id[0]}")
+        userOrders=queryExecutor.fetchall()
+        for k in range(0,len(userOrders)):
+            if userOrders[k][1]==t:
+                queryExecutor.execute(f"UPDATE myoffers SET status='Finished' WHERE offerId={userOrders[2]}")
+                queryExecutor.execute(f"INSERT INTO usernotifications VALUES({id[0]},'[Order status] Your order [{userOrders[k][0]}] has reached the expected delivery date, so it was automatically marked as 'Finished'\nYou can now rate the seller or report a problem.', '{t}')")
+                db_connection.commit()
         class AccountData:
             accName=username[0]; accId=id[0]
         queryExecutor.execute(f"SELECT * FROM usernotifications WHERE accountId={id[0]}")
@@ -1722,7 +1906,7 @@ def main(deletedAccount=False):
             alertStatus=f"You have {len(notifications)} new notifications!"
         else:
             alertStatus = "You have no notifications."
-        currentTime=time.localtime()
+        #currentTime=time.localtime()
         if 5<=currentTime.tm_hour<=11:
             greeting="Good morning"
         elif 12<=currentTime.tm_hour<=15:
