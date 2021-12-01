@@ -29,7 +29,7 @@ def listCurrentCarOffers():
             offerChoice=queryExecutor.fetchone()
             queryExecutor.execute(f"SELECT username FROM accounts WHERE id={offerChoice[0]}")
             sellerName=queryExecutor.fetchone()
-            queryExecutor.execute(f"INSERT INTO userorders VALUES({uniqueId},{accountId},{offerId},'{offerChoice[2]}','{offerChoice[3]}','{offerChoice[4]}','{offerChoice[5]}','{offerChoice[6]}','{offerChoice[7]}','{offerChoice[8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING','{sellerName[0]}','Waiting for seller response')")
+            queryExecutor.execute(f"INSERT INTO userorders VALUES({uniqueId},{accountId},{offerId},'{offerChoice[2]}','{offerChoice[3]}','{offerChoice[4]}','{offerChoice[5]}','{offerChoice[6]}','{offerChoice[7]}','{offerChoice[8]}','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}','PENDING','{sellerName[0]}','Waiting for seller response','')")
             queryExecutor.execute(f"UPDATE myoffers SET status='Ordered' WHERE accountId={accId} AND offerId={offerId}")
             queryExecutor.execute(f"INSERT INTO usernotifications VALUES({accId},'[Ordered offer]User {username[0]} has ordered a car you offer - Offer ID[{offerId}]. You can contact them to discuss more about the order.','{currentTime.tm_mday}.{currentTime.tm_mon}.{currentTime.tm_year} {currentTime.tm_hour}:{currentTime.tm_min}')")
             db_connection.commit()
@@ -619,8 +619,8 @@ def postCarOffer():
             continue
         else:
             break
-    queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,offerPrice,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{price}','{postingTime}','{comments}','');")
-    queryExecutor.execute(f"INSERT INTO myoffers VALUES({id[0]},{offerId},'{price}','{postingTime}','Listed')")
+    queryExecutor.execute(f"INSERT INTO offerpostings(accountId,offerId,title,description,TYPE,fuelType,driveType,yearProd,offerPrice,datePosted,comments) VALUES({id[0]},{offerId},'{title}','{desc}','{type}','{fType}','{drivetrain}','{year}','{price}','{postingTime}','{comments}');")
+    queryExecutor.execute(f"INSERT INTO myoffers(accountId,offerId,askPrice,posted,status) VALUES({id[0]},{offerId},'{price}','{postingTime}','Listed')")
     db_connection.commit()
     print(f"\nYour offer was successfully posted!\nOffer ID: {offerId}\n")
     proceed=input()
@@ -868,7 +868,8 @@ def CheckMyOrders(id):
                 report+=f"  Report details: {message}"
                 queryExecutor.execute(f"UPDATE userorders SET orderFlags='[REPORTED]' WHERE orderId={orderId}")
                 queryExecutor.execute(f"UPDATE myoffers SET status='Being reviewed by administrator',flags='[REPORTED]' WHERE offerId={offerId}")
-                queryExecutor.execute(f"INSERT INTO postbox VALUES('{name}','{title}',{report},'REPORT')")
+                queryExecutor.execute(f"INSERT INTO postbox VALUES('{name}','{title}','{report}','REPORT')")
+                db_connection.commit()
                 print("\nReport has been sent. An administrator will review as soon as possible.\n")
                 proceed=input()
                 break
@@ -889,13 +890,17 @@ def CheckMyOrders(id):
     print(output)
     returnBack=False; returnToBeginning=False
     outputOptions="[1]Delete/Cancel order || [2]Return"
+    if anyFinishedOrders == True:
+        outputOptions += " || [3]Rate seller || [4]Report a problem with an order || [5]Delete all finished orders"
     while True:
-        if anyFinishedOrders==True:
-            outputOptions+=" || [3]Rate seller || [4]Report a problem with an order || [5]Delete all finished orders"
         print(outputOptions)
         option=input("- ")
         if option=="1":
             while True:
+                if len(allOrders)==0:
+                    print("\nYou have no orders.\n")
+                    proceed=input()
+                    break
                 try:
                     n=int(input("Choose order: "))
                 except:
@@ -930,7 +935,7 @@ def CheckMyOrders(id):
                 try:
                     n=int(input("Pick one of your finished offers: "))
                     n-=1
-                    if n>len(allOrders)-1 or n<0:
+                    if n>=len(allOrders) or n<0:
                         print("\nInvalid choice.\n")
                         continue
                     elif allOrders[n][10]!='Finished':
@@ -944,18 +949,17 @@ def CheckMyOrders(id):
             sellerName=allOrders[n][11]; alreadyVoted=False
             while True:
                 try:
-                    rating=float(input(f"Rate user {sellerName[0]}(From 0.00 to 6.00): "))
+                    rating=float(input(f"Rate user {sellerName}(From 0.00 to 6.00): "))
                     if rating<0.00 or rating>6.00:
                         print("\nYour rating must be between 0.00 and 6.00 . Try again.\n")
                         continue
                     else:
-                        queryExecutor.execute(f"SELECT ratedUsers FROM accounts WHERE accountId={id}")
+                        queryExecutor.execute(f"SELECT ratedUsers FROM accounts WHERE id={id}")
                         ratedUsers=queryExecutor.fetchone()
-                        for k in range(0,len(ratedUsers)):
-                            if sellerName in ratedUsers[k][0]:
-                                print("\nYou have already voted for this user.\n")
-                                alreadyVoted=True
-                                break
+                        if sellerName in ratedUsers[0]:
+                            print("\nYou have already voted for this user.\n")
+                            alreadyVoted=True
+                            break
                         if alreadyVoted==True:
                             break
                         queryExecutor.execute(f"SELECT rating FROM accounts WHERE username='{sellerName}'")
@@ -964,10 +968,12 @@ def CheckMyOrders(id):
                         ratedBy=queryExecutor.fetchone(); ratedByVar=ratedBy[0]; ratedByVar+=1
                         queryExecutor.execute(f"SELECT ratedUsers FROM accounts WHERE id={id}")
                         ratedUsers=queryExecutor.fetchone(); ratedUsersVar=ratedUsers[0]; ratedUsersVar+=f"{sellerName}"
-                        queryExecutor.execute(f"UPDATE accounts SET rating={sellerRatingVar} WHERE username='{sellerName}'"); queryExecutor.execute(f"UPDATE accounts SET ratedBy={ratedByVar} WHERE username='{sellerName}'"); queryExecutor.execute(f"UPDATE accounts SET ratedUsers={ratedUsersVar} WHERE id={id}")
+                        queryExecutor.execute(f"UPDATE accounts SET rating={sellerRatingVar} WHERE username='{sellerName}'"); queryExecutor.execute(f"UPDATE accounts SET ratedBy={ratedByVar} WHERE username='{sellerName}'"); queryExecutor.execute(f"UPDATE accounts SET ratedUsers='{ratedUsersVar}' WHERE id={id}")
                         db_connection.commit()
+                        print("\nUser has been rated.\n")
+                        proceed = input()
                         break
-                except:
+                except TypeError:
                     print("\nInvalid rating. Try again\n")
                     continue
         elif anyFinishedOrders==True and option=="4":
@@ -978,17 +984,17 @@ def CheckMyOrders(id):
                         print("\nInvalid choice.\n")
                         continue
                     else:
-                        reportedOrderN=allOrders[n][0]; reportedOfferN=allOrders[n][1]
+                        reportedOrderN=allOrders[n-1][0]; reportedOfferN=allOrders[n-1][1]
                         break
                 except:
                     print("\nInvalid choice.\n")
                     continue
-            offerFlags=allOrders[n][13]
+            offerFlags=allOrders[n-1][13]; sellerName=allOrders[n-1][11]
             if '[REPORTED]' in offerFlags:
                 print("\nYou have already sent a report for that order!\n")
                 proceed=input()
             else:
-                Report(reportedOfferN,reportedOrderN,sellerName)
+                Report(reportedOrderN,reportedOfferN,sellerName)
         elif anyFinishedOrders==True and option=="5":
             confirm=input("Are you sure you want to perform that action?[Y/N]\n- ")
             currentlyReviewedFound=False
@@ -996,11 +1002,17 @@ def CheckMyOrders(id):
                 if "[REPORTED]" in allOrders[k][13]:
                     currentlyReviewedFound=True
             if confirm=="Y" or confirm=="y":
-                queryExecutor.execute(f"DELETE FROM userorders WHERE (accountId={id} and orderstatus='Finished) and not orderFlags='[REPORTED]''")
+                queryExecutor.execute(f"DELETE FROM userorders WHERE (accountId={id} and orderstatus='Finished') and (not orderFlags='[REPORTED]')")
                 if currentlyReviewedFound==True:
                     print("\nAll finished orders were cleared. Some orders are currently under review so they can't be deleted.\n")
+                    db_connection.commit()
+                    proceed = input(); returnToBeginning = True
+                    break
                 else:
+                    db_connection.commit()
                     print("\nAll finished orders were cleared.\n")
+                    proceed=input(); returnToBeginning=True
+                    break
         if returnToBeginning==True:
             break
     if returnBack==True:
