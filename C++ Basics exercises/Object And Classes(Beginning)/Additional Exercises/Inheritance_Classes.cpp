@@ -9,12 +9,19 @@ public:
 	double money;
 	double rate;
 	int time;
-	
+
+
 	MyMoney() {
 		name = "";
 		money = 0;
 		rate = 0;
 		time = 0;
+	}
+	MyMoney(string cN, double cM, double cR, int cT) {
+		name = cN;
+		money = cM;
+		rate = cR;
+		time = cT;
 	}
 
 	double getMoney() {
@@ -26,66 +33,60 @@ public:
 	}
 	void showAll() {
 		cout << "Name: " << name << "\nMoney: " << money << " USD\nRate: " << rate << " %\nTime: " << time << " years\nFinal sum: " << getMoney() << " USD\n";
-		for (int k = 1; k <= 35; k++) {
-			cout << "-";
-		}
-		cout << endl;
 	}
-	void setData(string clientName,double clientMoney,double clientRate,int clientTime) {
+	void setData(string clientName, double clientMoney, double clientRate, int clientTime) {
 		name = clientName;
 		money = clientMoney;
 		rate = clientRate;
 		time = clientTime;
+		for (int k = 1; k <= 45; k++) {
+			cout << "-";
+		}
+		cout << endl << "\nData of object " << this << " has been updated.\n";
+		for (int k = 1; k <= 45; k++) {
+			cout << "-";
+		}
+		cout << endl;
 	}
 
-	double operator-(MyMoney obj) {
-		return getMoney() - obj.getMoney();
+};
+
+class BigMoney :public MyMoney {
+public:
+	int periods;
+	BigMoney() : MyMoney() {
+		periods = 1 + rand() % 5;
 	}
-	double operator--() {
-		if (money >= 1000) {
-			money -= 1000;
+	BigMoney(string clientName, double clientMoney, double clientRate, int clientTime, int p) : MyMoney(clientName, clientMoney, clientRate, clientTime) {
+		periods = p;
+	}
+
+	double getMoney() {
+		double s = money;
+		for (int k = 1; k <= time * periods; k++) {
+			s *= (1 + rate / 100/periods);
 		}
-		else {
-			money = 0;
-		}
-		return money;
+		return s;
 	}
-	int operator--(int) {
-		if (time > 0) {
-			time-=1;
-		}
-		return time;
+	void showAll() {
+		MyMoney::showAll();
+		cout << "Accruals per year: " << periods << "\n";
 	}
-	MyMoney operator+(MyMoney obj) {
-		MyMoney tmp;
-		tmp.name = "Eduard Velkov";
-		tmp.money = money + obj.money;
-		tmp.rate = rate + obj.rate;
-		tmp.time = time + obj.time / 2;
-		return tmp;
-	}
-	double operator++() {
-		money += 1000;
-		return money;
-	}
-	int operator++(int) {
-		time += 1;
-		return time;
+	void setData(string clientName, double clientMoney, double clientRate, int clientTime, int p) {
+		MyMoney::setData(clientName, clientMoney, clientRate, clientTime);
+		periods = p;
 	}
 };
 
 int main() {
-	MyMoney obj1, obj2;
-	obj1.setData("Ivan Koichev", 1500, 5, 7);
-	obj2.setData("Seth Baker", 1700, 2, 8);
-	obj1.showAll(); obj2.showAll();
-	cout << endl << endl;
-	--obj1; obj2--; obj1.showAll(); obj2.showAll();
-	cout << "\nSubstracting Seth's final sum from Ivan's final sum by applying the predefined '-' operator: " << obj2 - obj1 << " USD" << endl << endl;
-	++obj1; obj2++; obj1.showAll(); obj2.showAll();
-	MyMoney* obj3 = new MyMoney;
-	*obj3 = obj1 + obj2;
-	obj3->showAll();
+	srand(2);
+	MyMoney objA("Ivan Ivanov",1200,3,9);
+	objA.showAll();
+	cout << endl;
+	BigMoney objB("Ivan Ivanov",1200,3,9,3);
+	objB.showAll();
+	objB.setData("Ivan Petkov", 3500, 4, 8, 5);
+	objB.showAll();
 	system("pause>nul");
 	return 0;
 }
