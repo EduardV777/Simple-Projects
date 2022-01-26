@@ -1,2 +1,2 @@
-# Simple-Personal-Projects
-Simple Personal Projects I am working on
+# Simple-Projects
+Simple Projects I am working on
