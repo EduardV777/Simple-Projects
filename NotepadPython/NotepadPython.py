@@ -1,236 +1,219 @@
 import os
-#print(os.getlogin())
 
-def menu():
-    while True:
-        stopEditingCurrFile = 0
-        print(f"{' '*10}Python Notepad 0.1\n")
-        print(f"'Create' - create a new file | 'Open' - open a file to edit\n\n'Quit' - leave the program\n")
-        quitReq=False
-        while True:
-            userInput=input("- ")
-            fileMode = "w"
-            if userInput.lower()=="create":
-            #---------------------------------Create-------------------------------------------------------------------#
-                forbiddenSymbols="\\/*:<>|"
-                while True:
-                    fileName=input("Enter name of file: ")
-                    if fileName.lower()=="con":
-                        print('Invalid filename')
-                        continue
+extensionsList = {"Normal Text": [".txt"], "Flash ActionScript": [".as", ".mx"],
+                      "Ada": [".ada", ".ads", ".adb"], "Assembly Language Source": [".asm"],
+                      "Abstract Syntax Notation One": [".mib"], "Active Server Pages Script": [".asp"],
+                      "Autolt": [".au3"], "AviSynth Scripts": [".avs", ".avsi"],
+                      "BaanC": [".bc", ".cln"],
+                      "Unix Script": ["bash", ".sh", ".bsh", ".csh", ".bash_profile", ".bashrc",
+                                      ".profile"], "Batch": [".bat", ".cmd", ".nt"],
+                      "BlitzBasic": [".bb"], "C Source": [".c", ".lex"],
+                      "Categorical Abstract Machine Language": [".ml", ".mli", ".sml", ".thy"],
+                      "CMake": [".cmake"],
+                      "COmmon Bussiness Oriented Language": [".cbl", ".cbd", ".cdb", ".cdc", ".cob",
+                                                             ".cpy", ".copy", ".lst"],
+                      "Csound": [".orc", ".sco", ".csd"], "CoffeeScript": [".coffee", ".litcoffee"],
+                      "C++ Source": [".cpp", ".cxx", ".cc", ".h", ".hh", ".hpp", ".hxx", ".ino"],
+                      "C# Source": [".cs"], "Cascade Style Sheets": [".css"],
+                      "D Programming Language": [".d"], "Diff": [".diff", ".patch"],
+                      "Erlang": [".erl", ".hrl"], "ESCRIPT": [".src", ".em"], "Forth": [".forth"],
+                      "Fortran free form source": [".f", ".for", ".f90", ".f95", ".f2k", "f23"],
+                      "Fortran fixed form source": [".f77"], "FreeBasic": [".bas", ".bi"],
+                      "Haskell": [".hs", ".lhs", ".las"],
+                      "Hyper Text Markup Language": [".html", ".htm", ".shtml", ".shtm", ".xhtml",
+                                                     ".xht", ".hta"],
+                      "MS ini": [".ini", ".inf", "url", "wer"], "Inno Setup": [".iss"],
+                      "Intel HEX binary data": [".hex"], "Java source": [".java"],
+                      "JavaScript": [".js", ".jsm", ".jsx", ".ts", ".tsx"], "JSON": [".json"],
+                      "JavaServer Pages script": [".jsp"], "KiXtart": [".kix"],
+                      "List Processing Language": [".lsp", ".lisp"], "LaTeX": [".tex", ".sty"],
+                      "Lua source": [".lua"], "Makefile": [".mak", ".mk"], "MATrix LABoratory": [".m"],
+                      "MMIXAL": [".mms"], "Nimrod": [".nim"], "extended crontab": [".tab", ".spf"],
+                      "MSDOS Style/ASCII Art": [".nfo"],
+                      "NullSoft Scriptable Install System script": [".nsi", ".nsh"],
+                      "OScript source": [".osx"], "Objective-C source": [".mm"],
+                      "Pascal source": [".pas", ".pp", ".p", ".inc", ".lpr"],
+                      "Perl Source": [".pl", ".pm", ".plx"],
+                      "PHP Hypertext Preprocessor": [".php", ".php3", ".php4", ".php5", ".phps",
+                                                     ".phpt", ".phtml"], "PostScript": [".ps"],
+                      "Windows PowerShell": [".ps1", ".psm1"], "Properties": [".properties"],
+                      "PureBasic": [".pb"], "Python": [".py", ".pyw"],
+                      "R programming language": [".r", ".s", ".splus"]}
+
+class File:
+    readyToClose=False; generatedErrors=False
+    def OpenSourcePath(self):
+        try:
+            self.openSourceWrite=open(self.filePath, "w")
+        except:
+            print("This path is unavailable!")
+        try:
+            self.openSourceRead=open(self.filePath, "r")
+        except:
+            print("This path is unavailable")
+    def UnloadFileData(self):
+        self.openSourceWrite.close(); self.openSourceRead.close()
+        del self.openSourceWrite; del self.openSourceRead
+    def __init__(self,fileName,path, openingFile=False):
+        self.saveState=0
+        self.fileName=fileName
+        self.filePath=path
+        #self.OpenSourcePath()
+    def SaveFile(self,saveAs=False, saveState=0, contents=""):
+        if saveState==0 or saveAs==True:
+            validName = True
+            while True:
+                if saveAs==True:
+                    print("(!_skip_! to skip if you wish to keep the current name)")
+                newFilename = input("Enter file name: ")
+                if "!_skip_!" in newFilename.lower() and saveAs==True:
+                    break
+                else:
+                    # will add name check for forbidden symbols and words
+                    if validName == True:
+                        self.fileName=newFilename
+                        break
+            while True:
+                validPath=False
+                saveLoc = input("(You can choose a system folder like 'Documents','Downloads'...or enter absolute file path)\n\
+                Where do you want to save the file? -")
+                if ":\\" in saveLoc:
+                    if os.path.exists(saveLoc)==True:
+                        validPath=True
                     else:
-                        invalidFile=False
-                        for k in range(0,len(forbiddenSymbols)):
-                            if forbiddenSymbols[k] in fileName:
-                                print("Invalid filename")
-                                invalidFile=True
+                        print("Path is invalid!")
+                        continue
+                else:
+                    if saveLoc.lower()=="downloads":
+                        saveLoc=f"C:\\Users\\{os.getlogin()}\\Downloads"
+                        validPath==True
+                    elif saveLoc.lower()=="pictures":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Pictures"
+                        validPath=True
+                    elif saveLoc.lower()=="videos":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Videos"
+                        validPath=True
+                    elif saveLoc.lower()=="documents":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Documents"
+                        validPath=True
+                    elif saveLoc.lower()=="users":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}"
+                        validPath=True
+                    elif saveLoc.lower()=="desktop":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Desktop"
+                        validPath=True
+                if validPath==True:
+                    break
+            while True:
+                validType=False
+                fileType=input("Enter file type/extension: ")
+                if "." in fileType:
+                    for j in extensionsList:
+                        for k in range(0,len(extensionsList[j])):
+                            if extensionsList[j][k]==fileType:
+                                validType=True
                                 break
-                        if invalidFile==True:
-                            continue
-                        else:
+                        if validType==True:
                             break
-                while True:
-                    filePath=input("Where would you like to save your file?(Desktop, Documents...or enter specific path) - ")
-                    user = os.getlogin(); possibleDriveName=[]; ind=0; absolutePath=False
-                    for k in range(65,91):
-                        possibleDriveName.append(chr(k))
-                    while ind<len(possibleDriveName):
-                        if f"{possibleDriveName[ind]}:\\" in filePath:
-                            absolutePath=True
+                    if validType==True:
+                        saveLoc+="\\"+self.fileName+fileType
+                        break
+                else:
+                    for j in extensionsList:
+                        if j==fileType:
+                            fileType="\\"+self.fileName+extensionsList[j][0]
+                            validType=True
                             break
-                        else:
-                            ind+=1
-                            continue
-                    if absolutePath==True:
+                    if validType==True:
+                        saveLoc+=fileType
+                        break
+            self.UnloadFileData()
+            self.filePath=saveLoc
+            self.OpenSourcePath()
+            self.openSourceWrite.write(contents)
+            self.openSourceWrite.flush()
+            if saveAs==True:
+                print(f"File {self.fileName} has been saved!")
+            else:
+                print("File has been saved!")
+        elif saveState==1:
+            self.openSourceWrite.write(contents)
+            self.openSourceWrite.flush()
+            print("Changes Saved!")
+
+    def Edit(self):
+        while True:
+            self.OpenSourcePath()
+            fileContents=""
+            outputName=f"{' '*35}{self.fileName}"
+            quitRequest=False
+            if self.saveState==0:
+                outputName+="*"
+            else:
+                self.filePath=self.filePath.split(".")
+                ext=self.filePath[-1]; del self.filePath[-1]
+                outputName+=f".{ext}"
+                self.filePath=''.join(self.filePath); self.filePath+="."+ext
+            print(f"{'-' * 100}")
+            print(outputName)
+            print(f"{'-' * 100}")
+            if self.saveState!=0:
+                text=self.openSourceRead.read()
+                text=text.split("\n")
+                for k in range(0,len(text)):
+                    print(f"{k+1}|{'    '}{text[k]}")
+            while True:
+                userInput=input()
+                if userInput.find("!_save_!")==0:
+                    if self.saveState == 0:
+                        self.SaveFile(contents=fileContents)
+                        fileContents=""; self.saveState+=1
                         break
                     else:
-                        if "desktop" in filePath.lower():
-                            filePath=f"C:\\Users\\{user}\\Desktop\\{fileName}"
-                            break
-                        elif "documents" in filePath.lower():
-                            filePath = f"C:\\Users\\{user}\\Documents\\{fileName}"
-                            break
-                        elif "pictures" in filePath.lower():
-                            filePath = f"C:\\Users\\{user}\\Pictures\\{fileName}"
-                            break
-                        elif "videos" in filePath.lower():
-                            filePath = f"C:\\Users\\{user}\\Videos\\{fileName}"
-                            break
-                        elif "downloads" in filePath.lower():
-                            filePath = f"C:\\Users\\{user}\\Downloads\\{fileName}"
-                            break
-                        elif "music" in filePath.lower():
-                            filePath = f"C:\\Users\\{user}\\Music\\{fileName}"
-                            break
-                        elif "users" in filePath.lower():
-                            filePath = f"C:\\Users\\{user}\\{fileName}"
-                            break
-
-                try:
-                    fileLoc=open(f"{filePath}", f"{fileMode}")
-                    saveState=0; newFile=False; extension=""; content=""
-                    extensionsList = {"Normal Text": [".txt"], "Flash ActionScript": [".as", ".mx"],
-                                      "Ada": [".ada", ".ads", ".adb"], "Assembly Language Source": [".asm"],
-                                      "Abstract Syntax Notation One": [".mib"], "Active Server Pages Script": [".asp"],
-                                      "Autolt": [".au3"], "AviSynth Scripts": [".avs", ".avsi"],
-                                      "BaanC": [".bc", ".cln"],
-                                      "Unix Script": ["bash", ".sh", ".bsh", ".csh", ".bash_profile", ".bashrc",
-                                                      ".profile"], "Batch": [".bat", ".cmd", ".nt"],
-                                      "BlitzBasic": [".bb"], "C Source": [".c", ".lex"],
-                                      "Categorical Abstract Machine Language": [".ml", ".mli", ".sml", ".thy"],
-                                      "CMake": [".cmake"],
-                                      "COmmon Bussiness Oriented Language": [".cbl", ".cbd", ".cdb", ".cdc", ".cob",
-                                                                             ".cpy", ".copy", ".lst"],
-                                      "Csound": [".orc", ".sco", ".csd"], "CoffeeScript": [".coffee", ".litcoffee"],
-                                      "C++ Source": [".cpp", ".cxx", ".cc", ".h", ".hh", ".hpp", ".hxx", ".ino"],
-                                      "C# Source": [".cs"], "Cascade Style Sheets": [".css"],
-                                      "D Programming Language": [".d"], "Diff": [".diff", ".patch"],
-                                      "Erlang": [".erl", ".hrl"], "ESCRIPT": [".src", ".em"], "Forth": [".forth"],
-                                      "Fortran free form source": [".f", ".for", ".f90", ".f95", ".f2k", "f23"],
-                                      "Fortran fixed form source": [".f77"], "FreeBasic": [".bas", ".bi"],
-                                      "Haskell": [".hs", ".lhs", ".las"],
-                                      "Hyper Text Markup Language": [".html", ".htm", ".shtml", ".shtm", ".xhtml",
-                                                                     ".xht", ".hta"],
-                                      "MS ini": [".ini", ".inf", "url", "wer"], "Inno Setup": [".iss"],
-                                      "Intel HEX binary data": [".hex"], "Java source": [".java"],
-                                      "JavaScript": [".js", ".jsm", ".jsx", ".ts", ".tsx"], "JSON": [".json"],
-                                      "JavaServer Pages script": [".jsp"], "KiXtart": [".kix"],
-                                      "List Processing Language": [".lsp", ".lisp"], "LaTeX": [".tex", ".sty"],
-                                      "Lua source": [".lua"], "Makefile": [".mak", ".mk"], "MATrix LABoratory": [".m"],
-                                      "MMIXAL": [".mms"], "Nimrod": [".nim"], "extended crontab": [".tab", ".spf"],
-                                      "MSDOS Style/ASCII Art": [".nfo"],
-                                      "NullSoft Scriptable Install System script": [".nsi", ".nsh"],
-                                      "OScript source": [".osx"], "Objective-C source": [".mm"],
-                                      "Pascal source": [".pas", ".pp", ".p", ".inc", ".lpr"],
-                                      "Perl Source": [".pl", ".pm", ".plx"],
-                                      "PHP Hypertext Preprocessor": [".php", ".php3", ".php4", ".php5", ".phps",
-                                                                     ".phpt", ".phtml"], "PostScript": [".ps"],
-                                      "Windows PowerShell": [".ps1", ".psm1"], "Properties": [".properties"],
-                                      "PureBasic": [".pb"], "Python": [".py", ".pyw"],
-                                      "R programming language": [".r", ".s", ".splus"]}
-                    while True:
-                        if stopEditingCurrFile==1:
-                            break
-                        head=f"\n\n{' '*15}{fileName}"
-                        if saveState==0:
-                            head+="*"
-                        print(head)
-                        print("You can enter the command !_quit_! to exit | !_save_! / !_save_as_! to save the new changes to the file")
-                        print("\n\n")
-                        if saveState!=0:
-                            if len(fileLoc.read())>0:
-                                print(fileLoc.read())
-                        while True:
-                            if stopEditingCurrFile == 1:
-                                break
-                            textEntry=input("-")
-                            if textEntry.find("!_quit_!")==0:
-                                if saveState==0:
-                                    print("What extension/type do you want to save the file in?('Show Extensions' - to show you a list with possible extensions)")
-                                    while True:
-                                        ext=input("- ")
-                                        if "show extensions" in ext.lower():
-                                            for j in extensionsList:
-                                                print(f"{', '.join(extensionsList[j])} -- {j}")
-                                                print("\n")
-                                        else:
-                                            typeFound=False; extensionFound=False
-                                            extensionString=""
-                                            if "." in ext:
-                                                for j in extensionsList:
-                                                    for k in range(0,len(extensionsList[j])):
-                                                        if ext==extensionsList[j][k]:
-                                                            extensionFound=True
-                                                            extensionString=extensionsList[j][k]
-                                                            break
-                                                    if extensionFound==True:
-                                                        break
-                                                if extensionFound==False:
-                                                    print("No such file extension exists. Try again.")
-                                                else:
-                                                    filePath+=ext
-                                                    fileLoc=open(filePath,"w")
-                                                    print(content, file=fileLoc)
-                                                    saveState+=1
-                                                    print(f"File {fileName} has been saved successfully!")
-                                                    hold=input()
-                                                    stopEditingCurrFile=1
-                                                    break
-                                            else:
-                                                typeFound=False
-                                                for j in extensionsList:
-                                                    if j.lower()==ext:
-                                                        typeFound=True
-                                                        filePath+=extensionsList[j][0]
-                                                        break
-                                                if typeFound==False:
-                                                    print("No such type exists. Try again.")
-                                                else:
-                                                    filePath+=ext
-                                                    fileLoc=open(filePath,"w")
-                                                    print(content, file=fileLoc)
-                                                    print(f"File {fileName} has been saved successfully!")
-                                                    hold=input()
-                                                    stopEditingCurrFile=1
-                                                    break
-                                else:
-                                    stopEditingCurrFile=1
-
-                            elif textEntry.find("!_save_!")==0:
-                                if saveState==0 and newFile==False:
-                                    print("What extension/type do you want to save the file in?('Show Extensions' - to show you a list with possible extensions)")
-                                    while True:
-                                        ext = input("- ")
-                                        if "show extensions" in ext.lower():
-                                            for j in extensionsList:
-                                                print(f"{', '.join(extensionsList[j])} -- {j}")
-                                                print("\n")
-                                        else:
-                                            typeFound = False
-                                            extensionFound = False
-                                            extensionString = ""
-                                            if "." in ext:
-                                                for j in extensionsList:
-                                                    for k in range(0, len(extensionsList[j])):
-                                                        if ext == extensionsList[j][k]:
-                                                            extensionFound = True
-                                                            extensionString = extensionsList[j][k]
-                                                            filePath+=ext
-                                                            break
-                                                    if extensionFound == True:
-                                                        break
-                                                if extensionFound == False:
-                                                    print("No such file extension exists. Try again.")
-                                        fileLoc=open(f"{filePath}", "w")
-                                        print(content, file=fileLoc)
-                                        saveState+=1
-                                        print("Changes saved.")
-                                        break
-                                else:
-                                    fileMode = "a"
-                                    print(content, file=fileLoc)
-                                    fileLoc.close()
-                                    print("Changes saved.")
-                            elif textEntry.find("!_save_as_!")==0:
-                                pass
-                            else:
-                                content += f"{textEntry}+\n"
-
-                except FileNotFoundError:
-                    print("The path you selected does not exist!")
-                    hold=input("Press any button to continue...")
+                        self.SaveFile(saveState=1,contents=fileContents)
+                        fileContents=""
+                        break
+                elif userInput.find("!_save_as_!")==0:
+                    self.SaveFile(saveAs=True, contents=fileContents)
+                    saveState=1
                     break
-            if stopEditingCurrFile==1:
+                elif userInput.find("!_quit_!")==0:
+                    if self.saveState==0:
+                        print("You have unsaved changes!\n")
+                        print(f"Do you want to save this file?[Y/N]")
+                        userChoice=input("- ")
+                        if userChoice.lower()=="y" or userChoice.lower()=="yes":
+                            self.SaveFile(contents=fileContents)
+                        quitRequest=True
+                        break
+                    else:
+                        quitRequest=True
+                        break
+                else:
+                    fileContents+=userInput+"\n"
+            if quitRequest==True:
                 break
-            #---------------------------------Create-------------------------------------------------------------------#
+
+def main():
+    quitRequest=False
+    while True:
+        print(f"{' '*20}Notepad Python 0.1\n")
+        print("'Create' - to create a new file | 'Open' - to open new file\n'Quit' - to quit the program")
+        while True:
+            userInput=input("- ")
+            if userInput.lower()=="create":
+                fileName="New file"
+                initP = str(os.path); initP = initP.split("'")
+                initP = initP[-2]; initP = initP.split("\\"); del initP[-1]; initP = '\\'.join(initP); initP+=fileName
+                cFile=File(fileName,initP)
+                cFile.OpenSourcePath()
+                cFile.Edit()
+                break
             elif userInput.lower()=="open":
                 pass
-            elif "quit" in userInput.lower():
-                print("Leaving Python Notepad...")
-                quitReq = True
+            elif userInput.lower()=="quit":
+                quitRequest=True
                 break
-        if quitReq==True:
+        if quitRequest==True:
             break
-    return 0
-
-menu()
+main()
