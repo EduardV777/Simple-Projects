@@ -1,135 +1,6 @@
-#*permission error issues when creating a file on windows 11
 import os
 
-class File:
-    def __init__(self,filePath):
-        self.file=open(filePath,"a")
-        self.filePath=filePath.split("\\")
-        self.extension=self.filePath[len(self.filePath)-1]; self.extension=self.extension.split("."); self.extension=self.extension[1]
-        self.fileName=self.filePath[len(self.filePath)-1]
-        self.filePath="".join(self.filePath)
-        self.fileMode="a"
-        self.readFile=open(self.filePath,"r")
-        self.contents=self.readFile.read()
-    def edit(self):
-        try:
-            saveState = 1; stopEditingCurrFile=0
-            extension = ""; content=""
-            editing = False
-            while True:
-                if stopEditingCurrFile == 1:
-                    return 0
-                if editing == False:
-                    if stopEditingCurrFile == 1:
-                        break
-                    head = f"\n{'-' * 156}\n{' ' * 80}{self.fileName}{' ' * 80}\n{'-' * 156}"
-                    self.fileName = self.fileName.split("*"); self.fileName = self.fileName[0]
-                    print(head)
-                    print("You can enter the command !_quit_! to exit | !_save_! / !_save_as_! to save the new changes to the file")
-                    print("\n\n")
-                    print(self.contents)
-                    editing = True
-                if stopEditingCurrFile == 1:
-                    break
-                while True:
-                    if stopEditingCurrFile == 1:
-                        return 0
-                    textEntry = input("-")
-                    if textEntry.find("!_quit_!") == 0:
-                        if saveState == 0:
-                            print("You have unsaved changes to this file! Select an option - Save | Do not save")
-                            while True:
-                                option=input("- ")
-                                if option.lower()=="save":
-                                    self.file.write(content)
-                                    self.file.close()
-                                    del self.file
-                                    stopEditingCurrFile=1
-                                    break
-                                elif option.lower()=="do not save":
-                                    stopEditingCurrFile=1
-                                    break
-                        else:
-                            self.file.close()
-                            del self.file
-                            stopEditingCurrFile = 1
-
-                    elif textEntry.find("!_save_!") == 0:
-                        self.file.write(content)
-                        self.file.close()
-                        content=""
-                        print("Changes saved.")
-                    # save as command doesn't save file contents!
-                    elif textEntry.find("!_save_as_!") == 0:
-                        confirm = input("Do you want to change the file name[Y/N]?:  ")
-                        if confirm.lower() == "y":
-                            newFileName = input("New File Name: ")
-                            if extension != "":
-                                newFileName += extension
-                            fileName = newFileName
-                        confirm = input("Do you want to change file type[Y/N]?: ")
-                        if confirm.lower() == "y":
-                            while True:
-                                newExt = input("New File Type: ")
-                                if "." in newExt:
-                                    if ShowExtensions(False, True, newExt):
-                                        extension = ValidExt
-                                        if "." in self.fileName:
-                                            self.fileName = self.fileName.split("."); self.fileName[1] = ValidExt
-                                            fileName = ".".join(self.fileName)
-                                        else:
-                                            fileName += newExt
-                                        if "." in filePath:
-                                            filePath = filePath.split(".");
-                                            filePath[1] = ValidExt;
-                                            filePath = ".".join(filePath)
-                                        else:
-                                            filePath += ValidExt
-                                        break
-                                else:
-                                    if ShowExtensions(True, False, newExt):
-                                        extension = ValidExt
-                                        if "." in fileName:
-                                            fileName = fileName.split("."); fileName[1] = ValidExt;
-                                            fileName = ".".join(fileName)
-                                        else:
-                                            fileName += newExt
-                                        if "." in filePath:
-                                            filePath = filePath.split("."); filePath[1] = ValidExt
-                                            filePath = ".".join(filePath)
-                                        else:
-                                            filePath += ValidExt
-                                        break
-                        confirm = input("Do you want to change save location[Y/N]?: ")
-                        if confirm.lower() == "y":
-                            while True:
-                                newSaveLoc = SaveLocation(fileName)
-                                try:
-                                    fileLoc.close()
-                                    fileLoc = open(newSaveLoc, "a")
-                                    filePath = newSaveLoc
-                                    fileLoc.write(content)
-                                    fileLoc.close()
-                                    break
-                                except FileNotFoundError:
-                                    continue
-                        print("File has been saved!")
-                        saveState += 1; content = ""
-                    else:
-                        content += f"{textEntry}\n"
-                        saveState=0
-
-        except FileNotFoundError:
-            print("The path you selected does not exist!")
-            hold = input("Press any button to continue...")
-        if stopEditingCurrFile == 1:
-            return 0
-    def UpdatePath(self):
-        pass
-
-def ShowExtensions(searchForType=False, searchForExtension=False, ext=""):
-    global ValidExt
-    extensionsList = {"Normal Text": [".txt"], "Flash ActionScript": [".as", ".mx"],
+extensionsList = {"Normal Text": [".txt"], "Flash ActionScript": [".as", ".mx"],
                       "Ada": [".ada", ".ads", ".adb"], "Assembly Language Source": [".asm"],
                       "Abstract Syntax Notation One": [".mib"], "Active Server Pages Script": [".asp"],
                       "Autolt": [".au3"], "AviSynth Scripts": [".avs", ".avsi"],
@@ -168,319 +39,181 @@ def ShowExtensions(searchForType=False, searchForExtension=False, ext=""):
                       "Windows PowerShell": [".ps1", ".psm1"], "Properties": [".properties"],
                       "PureBasic": [".pb"], "Python": [".py", ".pyw"],
                       "R programming language": [".r", ".s", ".splus"]}
-    if searchForType==False and searchForExtension==False:
-        for j in extensionsList:
-            print(f"{', '.join(extensionsList[j])} -- {j}")
-            print("\n")
-    elif searchForType==False and searchForExtension==True:
-        extensionFound=False
-        for j in extensionsList:
-            for k in range(0, len(extensionsList[j])):
-                if ext == extensionsList[j][k]:
-                    extensionFound = True
-                    ValidExt=ext
+
+class File:
+    readyToClose=False; generatedErrors=False
+    def OpenSourcePath(self):
+        try:
+            self.openSourceWrite=open(self.filePath, "w")
+        except:
+            print("This path is unavailable!")
+        try:
+            self.openSourceRead=open(self.filePath, "r")
+        except:
+            print("This path is unavailable")
+    def UnloadFileData(self):
+        self.openSourceWrite.close(); self.openSourceRead.close()
+        del self.openSourceWrite; del self.openSourceRead
+    def __init__(self,fileName,path, openingFile=False):
+        self.saveState=0
+        self.fileName=fileName
+        self.filePath=path
+        #self.OpenSourcePath()
+    def SaveFile(self,saveAs=False, saveState=0, contents=""):
+        if saveState==0 or saveAs==True:
+            validName = True
+            while True:
+                if saveAs==True:
+                    print("(!_skip_! to skip if you wish to keep the current name)")
+                newFilename = input("Enter file name: ")
+                if "!_skip_!" in newFilename.lower() and saveAs==True:
                     break
-            if extensionFound == True:
-                break
-        if extensionFound == False:
-            print("No such file extension exists. Try again.")
-        return extensionFound
-    elif searchForType==True and searchForExtension==False:
-        typeFound = False
-        for j in extensionsList:
-            if j.lower() == ext:
-                typeFound = True
-                ValidExt=extensionsList[j][0]
-                break
-        if typeFound == False:
-            print("No such type exists. Try again.")
-        return typeFound
-
-def SaveLocation(fileName):
-    isItWin11=False
-    while True:
-        path = input("Where would you like to save your file?(Desktop, Documents...or enter specific path) - ")
-        user = os.getlogin(); possibleDriveName = []; ind = 0; absolutePath = False
-        if os.path.exists(f"C:\\Users\\{user}\\OneDrive\\Desktop"):
-            isItWin11=True
-        for k in range(65, 91):
-            possibleDriveName.append(chr(k))
-        while ind < len(possibleDriveName):
-            if f"{possibleDriveName[ind]}:\\" in path:
-                absolutePath = True
-                break
+                else:
+                    # will add name check for forbidden symbols and words
+                    if validName == True:
+                        self.fileName=newFilename
+                        break
+            while True:
+                validPath=False
+                saveLoc = input("(You can choose a system folder like 'Documents','Downloads'...or enter absolute file path)\n\
+                Where do you want to save the file? -")
+                if ":\\" in saveLoc:
+                    if os.path.exists(saveLoc)==True:
+                        validPath=True
+                    else:
+                        print("Path is invalid!")
+                        continue
+                else:
+                    if saveLoc.lower()=="downloads":
+                        saveLoc=f"C:\\Users\\{os.getlogin()}\\Downloads"
+                        validPath==True
+                    elif saveLoc.lower()=="pictures":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Pictures"
+                        validPath=True
+                    elif saveLoc.lower()=="videos":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Videos"
+                        validPath=True
+                    elif saveLoc.lower()=="documents":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Documents"
+                        validPath=True
+                    elif saveLoc.lower()=="users":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}"
+                        validPath=True
+                    elif saveLoc.lower()=="desktop":
+                        saveLoc = f"C:\\Users\\{os.getlogin()}\\Desktop"
+                        validPath=True
+                if validPath==True:
+                    break
+            while True:
+                validType=False
+                fileType=input("Enter file type/extension: ")
+                if "." in fileType:
+                    for j in extensionsList:
+                        for k in range(0,len(extensionsList[j])):
+                            if extensionsList[j][k]==fileType:
+                                validType=True
+                                break
+                        if validType==True:
+                            break
+                    if validType==True:
+                        saveLoc+="\\"+self.fileName+fileType
+                        break
+                else:
+                    for j in extensionsList:
+                        if j==fileType:
+                            fileType="\\"+self.fileName+extensionsList[j][0]
+                            validType=True
+                            break
+                    if validType==True:
+                        saveLoc+=fileType
+                        break
+            self.UnloadFileData()
+            self.filePath=saveLoc
+            self.OpenSourcePath()
+            self.openSourceWrite.write(contents)
+            self.openSourceWrite.flush()
+            if saveAs==True:
+                print(f"File {self.fileName} has been saved!")
             else:
-                ind += 1
-                continue
-        if absolutePath == True:
-            break
-        else:
-            if "desktop" in path.lower():
-                if isItWin11==False:
-                    return f"C:\\Users\\{user}\\Desktop\\{fileName}"
-                else:
-                    return f"C:\\Users\\{user}\\OneDrive\\Desktop"
-            elif "documents" in path.lower():
-                if isItWin11==False:
-                    return f"C:\\Users\\{user}\\Documents\\{fileName}"
-                else:
-                    return f"C:\\Users\\{user}\\OneDrive\\Documents"
-            elif "pictures" in path.lower():
-                if isItWin11==False:
-                    return f"C:\\Users\\{user}\\Pictures\\{fileName}"
-                else:
-                    return f"C:\\Users\\{user}\\OneDrive\\Pictures"
-            elif "videos" in path.lower():
-                return f"C:\\Users\\{user}\\Videos\\{fileName}"
-            elif "downloads" in path.lower():
-                return f"C:\\Users\\{user}\\Downloads\\{fileName}"
-            elif "music" in path.lower():
-                return f"C:\\Users\\{user}\\Music\\{fileName}"
-            elif "users" in path.lower():
-                return f"C:\\Users\\{user}\\{fileName}"
+                print("File has been saved!")
+        elif saveState==1:
+            self.openSourceWrite.write(contents)
+            self.openSourceWrite.flush()
+            print("Changes Saved!")
 
-    if absolutePath==True:
-        return path
+    def Edit(self):
+        while True:
+            self.OpenSourcePath()
+            fileContents=""
+            outputName=f"{' '*35}{self.fileName}"
+            quitRequest=False
+            if self.saveState==0:
+                outputName+="*"
+            else:
+                self.filePath=self.filePath.split(".")
+                ext=self.filePath[-1]; del self.filePath[-1]
+                outputName+=f".{ext}"
+                self.filePath=''.join(self.filePath); self.filePath+="."+ext
+            print(f"{'-' * 100}")
+            print(outputName)
+            print(f"{'-' * 100}")
+            if self.saveState!=0:
+                text=self.openSourceRead.read()
+                text=text.split("\n")
+                for k in range(0,len(text)):
+                    print(f"{k+1}|{'    '}{text[k]}")
+            while True:
+                userInput=input()
+                if userInput.find("!_save_!")==0:
+                    if self.saveState == 0:
+                        self.SaveFile(contents=fileContents)
+                        fileContents=""; self.saveState+=1
+                        break
+                    else:
+                        self.SaveFile(saveState=1,contents=fileContents)
+                        fileContents=""
+                        break
+                elif userInput.find("!_save_as_!")==0:
+                    self.SaveFile(saveAs=True, contents=fileContents)
+                    saveState=1
+                    break
+                elif userInput.find("!_quit_!")==0:
+                    if self.saveState==0:
+                        print("You have unsaved changes!\n")
+                        print(f"Do you want to save this file?[Y/N]")
+                        userChoice=input("- ")
+                        if userChoice.lower()=="y" or userChoice.lower()=="yes":
+                            self.SaveFile(contents=fileContents)
+                        quitRequest=True
+                        break
+                    else:
+                        quitRequest=True
+                        break
+                else:
+                    fileContents+=userInput+"\n"
+            if quitRequest==True:
+                break
 
-def menu():
-
+def main():
+    quitRequest=False
     while True:
-        stopEditingCurrFile = 0
-        print(f"{' '*10}Python Notepad 0.1\n")
-        print(f"'Create' - create a new file | 'Open' - open a file to edit\n\n'Quit' - leave the program\n")
-        quitReq=False
+        print(f"{' '*20}Notepad Python 0.1\n")
+        print("'Create' - to create a new file | 'Open' - to open new file\n'Quit' - to quit the program")
         while True:
             userInput=input("- ")
-            fileMode = "w"
             if userInput.lower()=="create":
-            #---------------------------------Create-------------------------------------------------------------------#
-                forbiddenSymbols="\\/*:<>|"
-                while True:
-                    fileName=input("Enter name of file: ")
-                    if fileName.lower()=="con":
-                        print('Invalid filename')
-                        continue
-                    else:
-                        invalidFile=False
-                        for k in range(0,len(forbiddenSymbols)):
-                            if forbiddenSymbols[k] in fileName:
-                                print("Invalid filename")
-                                invalidFile=True
-                                break
-                        if invalidFile==True:
-                            continue
-                        else:
-                            break
-                filePath=SaveLocation(fileName)
-                try:
-                    fileLoc=open(f"{filePath}", f"{fileMode}")
-                    saveState=0; newFile=True; content=""; extension=""
-                    editing=False
-                    while True:
-                        if editing==False:
-                            if stopEditingCurrFile == 1:
-                                break
-                            fileLoc = open(f"{filePath}", "r")
-                            if stopEditingCurrFile == 1:
-                                break
-                            if saveState == 0:
-                                fileName+="*"
-                            head = f"\n{'-'*156}\n{' ' * 80}{fileName}{' '*80}\n{'-'*156}"
-                            fileName=fileName.split("*"); fileName=fileName[0]
-                            print(head)
-                            print("You can enter the command !_quit_! to exit | !_save_! / !_save_as_! to save the new changes to the file")
-                            print("\n\n")
-                            if saveState != 0:
-                                print(fileLoc.read())
-                            editing=True
-                            fileLoc.close()
-                        if stopEditingCurrFile == 1:
-                            break
-
-                        fileLoc = open(f"{filePath}", f"{fileMode}")
-                        textEntry=input("-")
-                        if textEntry.find("!_quit_!")==0:
-                            if saveState==0:
-                                saveFile=input("Do you want to save this file[Y/N]?")
-                                if saveFile.lower()=="y" or saveFile.lower()=="yes":
-                                    if saveState==0:
-                                        print("What extension/type do you want to save the file in?('Show Extensions' - to show you a list with possible extensions)")
-                                        while True:
-                                            ext=input("- ")
-                                            if "show extensions" in ext.lower():
-                                                ShowExtensions()
-                                            else:
-                                                if "." in ext:
-                                                    if ShowExtensions(False,True,ext)==True:
-                                                        filePath+=ValidExt
-                                                        fileLoc=open(filePath,"w")
-                                                        fileLoc.write(content)
-                                                        fileLoc.close()
-                                                        filePath=filePath.split(".")
-                                                        os.remove(filePath[0])
-                                                        saveState+=1
-                                                        print(f"File {fileName} has been saved successfully!")
-                                                        hold=input()
-                                                        stopEditingCurrFile=1
-                                                        break
-                                                else:
-                                                    if ShowExtensions(True,False,ext)==True:
-                                                        filePath+=ValidExt
-                                                        fileLoc=open(filePath,"w")
-                                                        fileLoc.write(content)
-                                                        fileLoc.close()
-                                                        filePath=filePath.split(".")
-                                                        os.remove(filePath[0])
-                                                        print(f"File {fileName} has been saved successfully!")
-                                                        hold=input()
-                                                        stopEditingCurrFile=1
-                                                        break
-                                else:
-                                    fileLoc.close()
-                                    del fileLoc
-                                    os.remove(filePath)
-                                    stopEditingCurrFile=1
-                                    break
-                            else:
-                                fileLoc.close()
-                                del fileLoc
-                                filePath=filePath.split(".")
-                                filePath=filePath[0]
-                                stopEditingCurrFile = 1
-                                break
-
-                        elif textEntry.find("!_save_!")==0:
-                            if saveState==0 and newFile==True:
-                                print("What extension/type do you want to save the file as?('Show Extensions' - to show you a list with possible extensions)")
-                                while True:
-                                    ext = input("- ")
-                                    if "show extensions" in ext.lower():
-                                        ShowExtensions()
-                                    else:
-                                        if "." in ext:
-                                            if ShowExtensions(False,True,ext)==True:
-                                                fileName+=ValidExt; filePath+=ValidExt
-                                                fileLoc=open(f"{filePath}", fileMode)
-                                                fileLoc.write(content)
-                                                fileLoc.close()
-                                                extension=ValidExt
-                                                content=""; fileMode="a"; newFile=False
-                                                saveState+=1
-                                                filePath=filePath.split(".")
-                                                os.remove(filePath[0])
-                                                filePath=".".join(filePath)
-                                                print(filePath)
-                                                hold=input()
-                                                print("Changes saved.")
-                                                editing=False
-                                                break
-                                        else:
-                                            if ShowExtensions(True,False,ext)==True:
-                                                filePath+=ValidExt
-                                                fileLoc = open(f"{filePath}", fileMode)
-                                                fileLoc.write(content)
-                                                fileLoc.close()
-                                                filePath=filePath.split(".")
-                                                os.remove(filePath[0])
-                                                filePath=".".join(filePath)
-                                                content = ""; fileMode = "a"; newFile = False
-                                                saveState += 1
-                                                print("Changes saved.")
-                                                editing=False
-                                                break
-                            else:
-                                fileMode = "a"
-                                fileLoc.write(content)
-                                fileLoc.close()
-                                print("Changes saved.")
-                        #save as command doesn't save file contents!
-                        elif textEntry.find("!_save_as_!")==0:
-                            confirm=input("Do you want to change the file name[Y/N]?:  ")
-                            if confirm.lower()=="y":
-                                newFileName=input("New File Name: ")
-                                if extension!="":
-                                    newFileName+=extension
-                                fileName=newFileName
-                            confirm=input("Do you want to change file type[Y/N]?: ")
-                            if confirm.lower()=="y":
-                                while True:
-                                    newExt=input("New File Type: ")
-                                    if "." in newExt:
-                                        if ShowExtensions(False,True,newExt):
-                                            extension=ValidExt
-                                            if "." in fileName:
-                                                fileName=fileName.split("."); fileName[1]=ValidExt; fileName=".".join(fileName)
-                                            else:
-                                                fileName+=newExt
-                                            if "." in filePath:
-                                                filePath=filePath.split("."); filePath[1]=ValidExt; filePath=".".join(filePath)
-                                            else:
-                                                filePath+=ValidExt
-                                            break
-                                    else:
-                                        if ShowExtensions(True,False,newExt):
-                                            extension=ValidExt
-                                            if "." in fileName:
-                                                fileName=fileName.split("."); fileName[1]=ValidExt; fileName=".".join(fileName)
-                                            else:
-                                                fileName+=newExt
-                                            if "." in filePath:
-                                                filePath=filePath.split("."); filePath[1]=ValidExt; filePath=".".join(filePath)
-                                            else:
-                                                filePath+=ValidExt
-                                            break
-                            confirm=input("Do you want to change save location[Y/N]?: ")
-                            if confirm.lower()=="y":
-                                while True:
-                                    newSaveLoc=SaveLocation(fileName)
-                                    # try:
-                                    #     fileLoc=open(newSaveLoc, fileMode)
-                                    # except:
-                                    #     continue
-                                    fileLoc.close()
-                                    filePath=filePath.split(".")
-                                    os.remove(filePath[0])
-                                    filePath=".".join(filePath)
-                                    fileLoc2 = open(filePath, fileMode)
-                                    filePath = newSaveLoc
-                                    fileLoc2.write(content)
-                                    fileLoc2.close()
-                                    break
-                            print("File has been saved!")
-                            saveState+=1; content=""
-                        else:
-                            content += f"{textEntry}\n"
-
-                except FileNotFoundError:
-                    print("The path you selected does not exist!")
-                    hold=input("Press any button to continue...")
-                    break
-            if stopEditingCurrFile==1:
+                fileName="New file"
+                initP = str(os.path); initP = initP.split("'")
+                initP = initP[-2]; initP = initP.split("\\"); del initP[-1]; initP = '\\'.join(initP); initP+=fileName
+                cFile=File(fileName,initP)
+                cFile.OpenSourcePath()
+                cFile.Edit()
                 break
-            #---------------------------------Create-------------------------------------------------------------------#
             elif userInput.lower()=="open":
-                while True:
-                    path=input("Please enter the path of the file: ")
-                    if os.path.exists(path):
-                        path=path.split("\\"); testFileName=path[len(path)-1]; testFileName=testFileName.split("."); testFileName[1]="."+testFileName[1]
-                        if ShowExtensions(False,True,testFileName[1]):
-                            path="\\".join(path)
-                            openedFile=File(path)
-                            break
-                        else:
-                            print("This is not a valid file!")
-                            continue
-                    else:
-                        print("Invalid file path!\n")
-                        continue
-                openedFile.edit()
-            # ---------------------------------Open--------------------------------------------------------------------#
-            elif "quit" in userInput.lower():
-                print("Leaving Python Notepad...")
-                quitReq = True
+                pass
+            elif userInput.lower()=="quit":
+                quitRequest=True
                 break
-        if quitReq==True:
+        if quitRequest==True:
             break
-    return 0
-
-menu()
+main()
