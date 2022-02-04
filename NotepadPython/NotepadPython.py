@@ -1,5 +1,8 @@
-import os
+import os, pyperclip
 
+if os.name=="nt":
+    forbiddenNames=["con","nul","prn","aux","com1","com2","com3","com4","com5","com6","com7","com8","com9","lpt1","lpt2","lpt3","lpt4","lpt5","lpt6","lpt7","lpt8","lpt9",\
+                    "\\","/","<",">",":","\"","|","?","*"]
 extensionsList = {"Normal Text": [".txt"], "Flash ActionScript": [".as", ".mx"],
                       "Ada": [".ada", ".ads", ".adb"], "Assembly Language Source": [".asm"],
                       "Abstract Syntax Notation One": [".mib"], "Active Server Pages Script": [".asp"],
@@ -44,7 +47,7 @@ class File:
     readyToClose=False; generatedErrors=False
     def OpenSourcePath(self):
         try:
-            self.openSourceWrite=open(self.filePath, "w")
+            self.openSourceWrite=open(self.filePath, "a")
         except:
             print("This path is unavailable!")
         try:
@@ -55,28 +58,34 @@ class File:
         self.openSourceWrite.close(); self.openSourceRead.close()
         del self.openSourceWrite; del self.openSourceRead
     def __init__(self,fileName,path, openingFile=False):
-        self.saveState=0
+        if openingFile==True:
+            self.saveState=1
+        else:
+            self.saveState=0
         self.fileName=fileName
         self.filePath=path
-        #self.OpenSourcePath()
     def SaveFile(self,saveAs=False, saveState=0, contents=""):
         if saveState==0 or saveAs==True:
-            validName = True
             while True:
+                validName = True
                 if saveAs==True:
                     print("(!_skip_! to skip if you wish to keep the current name)")
                 newFilename = input("Enter file name: ")
                 if "!_skip_!" in newFilename.lower() and saveAs==True:
                     break
                 else:
-                    # will add name check for forbidden symbols and words
+                    for k in range(0,len(forbiddenNames)):
+                        if forbiddenNames[k] in newFilename.lower():
+                            validName=False
                     if validName == True:
                         self.fileName=newFilename
                         break
+                    else:
+                        print("Chosen file name is invalid. Forbidden names/symbols detected.")
+                        continue
             while True:
                 validPath=False
-                saveLoc = input("(You can choose a system folder like 'Documents','Downloads'...or enter absolute file path)\n\
-                Where do you want to save the file? -")
+                saveLoc = input("(You can choose a system folder like 'Documents','Downloads'...or enter absolute file path)\nWhere do you want to save the file? -")
                 if ":\\" in saveLoc:
                     if os.path.exists(saveLoc)==True:
                         validPath=True
@@ -142,11 +151,12 @@ class File:
             print("Changes Saved!")
 
     def Edit(self):
+        quitRequest = False; returnRequest = False
         while True:
             self.OpenSourcePath()
-            fileContents=""
+            if returnRequest==False:
+                fileContents=""
             outputName=f"{' '*35}{self.fileName}"
-            quitRequest=False
             if self.saveState==0:
                 outputName+="*"
             else:
@@ -159,9 +169,15 @@ class File:
             print(f"{'-' * 100}")
             if self.saveState!=0:
                 text=self.openSourceRead.read()
+                pyperclip.copy(text)
                 text=text.split("\n")
                 for k in range(0,len(text)):
                     print(f"{k+1}|{'    '}{text[k]}")
+            elif returnRequest==True:
+                text=fileContents.split("\n")
+                for k in range(0,len(text)):
+                    print(f"{k+1}|{'    '}{text[k]}")
+                returnRequest=False
             while True:
                 userInput=input()
                 if userInput.find("!_save_!")==0:
@@ -180,18 +196,31 @@ class File:
                 elif userInput.find("!_quit_!")==0:
                     if self.saveState==0:
                         print("You have unsaved changes!\n")
-                        print(f"Do you want to save this file?[Y/N]")
-                        userChoice=input("- ")
-                        if userChoice.lower()=="y" or userChoice.lower()=="yes":
-                            self.SaveFile(contents=fileContents)
-                        quitRequest=True
-                        break
+                        print(f"Do you want to save this file?[Y/N/Return]")
+                        while True:
+                            userChoice=input("- ")
+                            if userChoice.lower()=="y" or userChoice.lower()=="yes":
+                                self.SaveFile(contents=fileContents)
+                                self.UnloadFileData()
+                                del fileContents
+                                quitRequest=True
+                                break
+                            elif userChoice.lower()=="n" or userChoice.lower()=="no":
+                                quitRequest=True
+                                break
+                            elif userChoice.lower()=="return":
+                                returnRequest=True
+                                break
                     else:
                         quitRequest=True
                         break
                 else:
                     fileContents+=userInput+"\n"
+                if returnRequest==True or quitRequest==True:
+                    break
             if quitRequest==True:
+                if os.path.exists("C:\\Users\\EdwardV\\AppData\\Local\\Programs\\Python\\Python39\\lib\\New file"):
+                    os.remove("C:\\Users\\EdwardV\\AppData\\Local\\Programs\\Python\\Python39\\lib\\New file")
                 break
 
 def main():
@@ -208,9 +237,27 @@ def main():
                 cFile=File(fileName,initP)
                 cFile.OpenSourcePath()
                 cFile.Edit()
+                del cFile
                 break
             elif userInput.lower()=="open":
-                pass
+                validPath=False
+                while True:
+                    print("Please enter the path to the file you'd like to edit:\n")
+                    usrPath=input("- ")
+                    if os.path.exists(usrPath):
+                        validPath=True
+                        break
+                    else:
+                        print("File not found or path is invalid...")
+                        hold=input()
+                        continue
+                if validPath==True:
+                    fileName=usrPath.split("\\"); fileName=fileName[-1].split("."); fileName=fileName[0]
+                    oFile=File(fileName,usrPath,True)
+                    oFile.OpenSourcePath()
+                    oFile.Edit()
+                    del oFile
+                    break
             elif userInput.lower()=="quit":
                 quitRequest=True
                 break
