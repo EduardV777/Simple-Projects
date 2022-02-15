@@ -2,7 +2,7 @@ import os, pyperclip
 
 if os.name=="nt":
     clearCommand="cls"
-    forbiddenNames=["con", "nul", "prn", "aux", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",\
+    forbiddenNames=["con", " nul", "prn", "aux", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",\
                     "\\","/","<",">",":","\"","|","?","*"]
 extensionsList = {"Normal Text": [".txt"], "Flash ActionScript": [".as", ".mx"],
                       "Ada": [".ada", ".ads", ".adb"], "Assembly Language Source": [".asm"],
@@ -51,16 +51,16 @@ class File:
             try:
                 self.openSourceWrite=open(self.filePath, "w")
             except:
-                generatedErrors = True
+                self.generatedErrors = True
                 print("This path is unavailable!")
         try:
             self.openSourceRead=open(self.filePath, "r")
         except:
-            generatedErrors = True
+            self.generatedErrors = True
             print("This path is unavailable")
     def UnloadFileData(self):
         self.openSourceRead.close()
-        del self.openSourceWrite; del self.openSourceRead
+        del self.openSourceRead
     def __init__(self,fileName,path, openingFile=False):
         if openingFile==True:
             self.tempFilePath="None"
@@ -75,7 +75,9 @@ class File:
     def SaveFile(self,saveAs=False, saveState=0, contents=""):
         if saveState==0 or saveAs==True:
             originalFileName = self.fileName; originalFilePath = self.filePath
-            fileExists=False; rewrite=False; saveLoc=""
+            fileExists=False; rewrite=False; saveLoc=""; isItWin11=False
+            if os.path.exists(f"C:\\Users\\{os.getlogin()}\\OneDrive\\Desktop"):
+                isItWin11=True
             def ProcessFileName():
                 while True:
                     validName = True
@@ -113,19 +115,28 @@ class File:
                             saveLoc=f"C:\\Users\\{os.getlogin()}\\Downloads"
                             validPath==True
                         elif saveLoc.lower()=="pictures":
-                            saveLoc = f"C:\\Users\\{os.getlogin()}\\Pictures"
+                            if isItWin11==True:
+                                saveLoc = f"C:\\Users\\{os.getlogin()}\\OneDrive\\Pictures"
+                            else:
+                                saveLoc = f"C:\\Users\\{os.getlogin()}\\Pictures"
                             validPath=True
                         elif saveLoc.lower()=="videos":
                             saveLoc = f"C:\\Users\\{os.getlogin()}\\Videos"
                             validPath=True
                         elif saveLoc.lower()=="documents":
-                            saveLoc = f"C:\\Users\\{os.getlogin()}\\Documents"
+                            if isItWin11==True:
+                                saveLoc = f"C:\\Users\\{os.getlogin()}\\OneDrive\\Documents"
+                            else:
+                                saveLoc = f"C:\\Users\\{os.getlogin()}\\Documents"
                             validPath=True
                         elif saveLoc.lower()=="users":
                             saveLoc = f"C:\\Users\\{os.getlogin()}"
                             validPath=True
                         elif saveLoc.lower()=="desktop":
-                            saveLoc = f"C:\\Users\\{os.getlogin()}\\Desktop"
+                            if isItWin11==True:
+                                saveLoc = f"C:\\Users\\{os.getlogin()}\\OneDrive\\Desktop"
+                            else:
+                                saveLoc = f"C:\\Users\\{os.getlogin()}\\Desktop"
                             validPath=True
                     if validPath==True:
                         break
@@ -238,6 +249,10 @@ class File:
             self.OpenSourcePath(openWriteMode=True)
         else:
             self.OpenSourcePath()
+            if self.generatedErrors==True:
+                print("The file could not be found!")
+                hold = input("Press ENTER to continue")
+                return -1
         if self.openingFile==True:
             self.openingFile=False
             text=self.openSourceRead.read()
@@ -343,7 +358,7 @@ def main():
     quitRequest=False
     while True:
         print(f"{' '*20}Notepad Python 0.1\n")
-        print("'Create' - to create a new file | 'Open' - to open new file\n\n'Quit' - to quit the program ")
+        print("'Create' - to create a new file | 'Open' - to open file\n\n'Quit' - to quit the program | License - to see more about the license\n\n'Commands' - to see more about available commands")
         while True:
             userInput=input("- ")
             if userInput.lower()=="create":
@@ -369,12 +384,46 @@ def main():
                 if validPath==True:
                     fileName=usrPath.split("\\"); fileName=fileName[-1].split("."); fileName=fileName[0]
                     oFile=File(fileName,usrPath,True)
-                    oFile.OpenSourcePath()
                     oFile.Edit()
                     del oFile
                     break
             elif userInput.lower()=="quit":
                 quitRequest=True
+                break
+            elif userInput.lower()=="license":
+                print(f"\n{' '*15}GNU GENERAL PUBLIC LICENSE\n{' '*15}Version 3, 29 June 2007\n{' '*15}Copyright (C) 2022  Eduard Velkov\
+    \n\nThis program is free software: you can redistribute it and/or modify\
+    \nit under the terms of the GNU General Public License as published by\
+    \nthe Free Software Foundation, either version 3 of the License, or\
+    \n(at your option) any later version.\
+    \nThis program is distributed in the hope that it will be useful,\
+    \nbut WITHOUT ANY WARRANTY; without even the implied warranty of\
+    \nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\
+    \nGNU General Public License for more details.\
+    \nYou should have received a copy of the GNU General Public License\
+    \nalong with this program.  If not, see <https://www.gnu.org/licenses/>.")
+                proceed=input()
+                os.system(clearCommand)
+                break
+            elif userInput.lower()=="commands":
+                print("1. Editing Commands\n")
+                while True:
+                    userChoice=input()
+                    if userChoice=="1":
+                        print(f"{' '*15}Editing commands:\n\
+        '*Commands while editing a file usually have the following format - !_command_!.'\n\
+        !_save_! - to save the file;\n \
+        !_save_as_! - save the file with different name, location or type\n\
+        !_edit_row_! - select row number and edit the text there\n \
+        !_quit_! - leave editing mode\n\
+        !_skip_! - skip actions at specific stages. You will be notified when you can use it.\n")
+                        hold=input()
+                        break
+                    elif "/return" in userChoice.lower():
+                        break
+                    else:
+                        continue
+                os.system(clearCommand)
                 break
             # elif userInput.lower()=="configure":
             #     rConfig=open(configPath,"r")
@@ -382,8 +431,8 @@ def main():
             #     print(f"Current settings applied:\n\n{readConfigData}\nWrite the name of the option you'd like to change or 'Return' to go back")
             #     readConfigData=readConfigData.split("\n")
             #     opt=input()
-                if "return" in opt:
-                    break
+            #     if "return" in opt:
+            #         break
         if quitRequest==True:
             break
 main()
