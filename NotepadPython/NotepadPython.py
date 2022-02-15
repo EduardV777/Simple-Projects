@@ -224,7 +224,7 @@ class File:
                 self.fileName=originalFileName; self.filePath=originalFilePath
                 return False
         elif saveState==1 or saveState==2:
-            self.openSourcePath(openWriteMode=True)
+            self.OpenSourcePath(openWriteMode=True)
             self.openSourceWrite.write('\n'.join(contents))
             self.openSourceWrite.flush()
             self.openSourceWrite.close()
@@ -271,7 +271,6 @@ class File:
                         text=[]
                     break
                 elif userInput.find("!_save_as_!")==0:
-                    self.OpenSourcePath(openWriteMode=True)
                     self.SaveFile(saveAs=True, contents=text)
                     break
                 elif userInput.find("!_quit_!")==0:
@@ -281,9 +280,7 @@ class File:
                         while True:
                             userChoice=input("- ")
                             if userChoice.lower()=="y" or userChoice.lower()=="yes":
-                                self.OpenSourcePath(openWriteMode=True)
                                 self.SaveFile(saveState=self.saveState, contents=text)
-                                self.UnloadFileData(closeWriteMode=True)
                                 del text; del userInput
                                 quitRequest=True
                                 break
@@ -310,7 +307,7 @@ class File:
                                 continue
                             else:
                                 print(f"{rowN+1} |    {text[rowN]}")
-                                print("(You can leave empty to remove this row)\n(The row has been copied. You can paste it and edit a part of it.)")
+                                print("(You can leave empty to remove this row)\n(The row has been copied. You can paste it and edit part of it.)")
                                 pyperclip.copy(text[rowN])
                                 rewriteRow=input()
                                 if len(rewriteRow)!=0:
