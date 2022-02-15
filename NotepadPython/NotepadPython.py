@@ -1,4 +1,4 @@
-import os
+import os, pyperclip
 
 if os.name=="nt":
     clearCommand="cls"
@@ -58,16 +58,17 @@ class File:
         except:
             generatedErrors = True
             print("This path is unavailable")
-    def UnloadFileData(self, closeWriteMode=False):
-        if closeWriteMode==True:
-            self.openSourceWrite.close()
-        else:
-            self.openSourceWrite.close(); self.openSourceRead.close()
-            del self.openSourceWrite; del self.openSourceRead
+    def UnloadFileData(self):
+        self.openSourceRead.close()
+        del self.openSourceWrite; del self.openSourceRead
     def __init__(self,fileName,path, openingFile=False):
         if openingFile==True:
+            self.tempFilePath="None"
+            self.openingFile=openingFile
             self.saveState=1
         else:
+            self.tempFilePath=path
+            self.openingFile=openingFile
             self.saveState=0
         self.fileName=fileName
         self.filePath=path
@@ -94,6 +95,9 @@ class File:
                             continue
                 return newFilename
             self.fileName=ProcessFileName()
+            if "!_skip_!" in self.fileName:
+                #save the original file name
+                self.fileName=originalFileName
             def ProcessSaveLocation():
                 while True:
                     validPath=False
@@ -208,15 +212,24 @@ class File:
                 self.OpenSourcePath(openWriteMode=True)
                 self.openSourceWrite.write("\n".join(contents))
                 self.openSourceWrite.flush()
-                self.saveState += 1
+                self.openSourceWrite.close()
+                if self.saveState==0:
+                    if os.path.exists(self.tempFilePath):
+                        os.remove(self.tempFilePath)
+                        self.tempFilePath = "None"
+                    self.saveState += 1
                 print(f"File {self.fileName} has been saved!")
             else:
                 print("Saving cancelled")
                 self.fileName=originalFileName; self.filePath=originalFilePath
                 return False
         elif saveState==1 or saveState==2:
+            self.openSourcePath(openWriteMode=True)
             self.openSourceWrite.write('\n'.join(contents))
             self.openSourceWrite.flush()
+            self.openSourceWrite.close()
+            if saveState==2:
+                self.saveState-=1
             print("Changes Saved!")
 
     def Edit(self):
@@ -225,6 +238,10 @@ class File:
             self.OpenSourcePath(openWriteMode=True)
         else:
             self.OpenSourcePath()
+        if self.openingFile==True:
+            self.openingFile=False
+            text=self.openSourceRead.read()
+            text = text.split("\n")
         while True:
             os.system(clearCommand)
             outputName=f"{' '*35}{self.fileName}"
@@ -241,9 +258,6 @@ class File:
             print(f"{'-' * 100}")
             print(outputName)
             print(f"{'-' * 100}")
-            if (self.saveState!=0 and self.saveState!=2) or returnRequest==True:
-                text=self.openSourceRead.read()
-                text=text.split("\n")
             if len(text)!=0:
                 for k in range(0,len(text)):
                     print(f"{k+1}|{'    '}{text[k]}")
@@ -252,19 +266,13 @@ class File:
             while True:
                 userInput=input()
                 if userInput.find("!_save_!")==0:
-                    if self.saveState == 0:
-                        self.OpenSourcePath(openWriteMode=True)
-                        if self.SaveFile(contents=text)==False:
-                            text=[]
-                        self.UnloadFileData(closeWriteMode=True)
-                        break
-                    else:
-                        self.SaveFile(saveState=1,contents=text)
+                    self.OpenSourcePath(openWriteMode=True)
+                    if self.SaveFile(saveState=self.saveState,contents=text)==False:
+                        text=[]
+                    break
                 elif userInput.find("!_save_as_!")==0:
                     self.OpenSourcePath(openWriteMode=True)
                     self.SaveFile(saveAs=True, contents=text)
-                    self.UnloadFileData(closeWriteMode=True)
-                    saveState=1
                     break
                 elif userInput.find("!_quit_!")==0:
                     if self.saveState==0 or self.saveState==2:
@@ -274,7 +282,7 @@ class File:
                             userChoice=input("- ")
                             if userChoice.lower()=="y" or userChoice.lower()=="yes":
                                 self.OpenSourcePath(openWriteMode=True)
-                                self.SaveFile(contents=text)
+                                self.SaveFile(saveState=self.saveState, contents=text)
                                 self.UnloadFileData(closeWriteMode=True)
                                 del text; del userInput
                                 quitRequest=True
@@ -302,15 +310,14 @@ class File:
                                 continue
                             else:
                                 print(f"{rowN+1} |    {text[rowN]}")
-                                print("(You can leave empty to remove this row)")
+                                print("(You can leave empty to remove this row)\n(The row has been copied. You can paste it and edit a part of it.)")
+                                pyperclip.copy(text[rowN])
                                 rewriteRow=input()
                                 if len(rewriteRow)!=0:
                                     text[rowN]=rewriteRow
                                 else:
                                     del text[rowN]
-                                self.OpenSourcePath(openWriteMode=True)
-                                self.SaveFile(saveState=self.saveState,contents=text, rewrite=True)
-                                self.UnloadFileData(closeWriteMode=True)
+                                self.saveState=2
                                 returnRequest=True
                                 break
                 else:
@@ -321,23 +328,25 @@ class File:
                 if returnRequest==True or quitRequest==True:
                     break
             if quitRequest==True:
-                if os.path.exists("C:\\Users\\EdwardV\\AppData\\Local\\Programs\\Python\\Python39\\lib\\New file"):
-                    os.remove("C:\\Users\\EdwardV\\AppData\\Local\\Programs\\Python\\Python39\\lib\\New file")
+                os.system(clearCommand)
+                self.UnloadFileData()
+                if os.path.exists(self.tempFilePath):
+                    os.remove(self.tempFilePath)
                 break
 
 def main():
     #check if config file exists, otherwise create one and fill with default values
-    configPath=str(os.path); configPath=configPath.split("'"); configPath=configPath[-2]; configPath=configPath.split("\\"); del configPath[-1]
-    configPath='\\'.join(configPath); configPath+="notepadConf.conf"
-    if not os.path.exists(configPath):
-        createConfig=open(configPath,"w")
-        configData="Autosaving: OFF\nAutosave Time: 15 minutes\nLanguage: EN"
-        createConfig.write(configData)
-        createConfig.flush()
+    # configPath=str(os.path); configPath=configPath.split("'"); configPath=configPath[-2]; configPath=configPath.split("\\"); del configPath[-1]
+    # configPath='\\'.join(configPath); configPath+="notepadConf.conf"
+    # if not os.path.exists(configPath):
+    #     createConfig=open(configPath,"w")
+    #     configData="Autosaving: OFF\nAutosave Time: 15 minutes\nLanguage: EN"
+    #     createConfig.write(configData)
+    #     createConfig.flush()
     quitRequest=False
     while True:
         print(f"{' '*20}Notepad Python 0.1\n")
-        print("'Create' - to create a new file | 'Open' - to open new file\n\n'Quit' - to quit the program | 'Configure' - to configure the way notepad works")
+        print("'Create' - to create a new file | 'Open' - to open new file\n\n'Quit' - to quit the program ")
         while True:
             userInput=input("- ")
             if userInput.lower()=="create":
@@ -370,12 +379,12 @@ def main():
             elif userInput.lower()=="quit":
                 quitRequest=True
                 break
-            elif userInput.lower()=="configure":
-                rConfig=open(configPath,"r")
-                readConfigData=rConfig.read()
-                print(f"Current settings applied:\n\n{readConfigData}\nWrite the name of the option you'd like to change or 'Return' to go back")
-                readConfigData=readConfigData.split("\n")
-                opt=input()
+            # elif userInput.lower()=="configure":
+            #     rConfig=open(configPath,"r")
+            #     readConfigData=rConfig.read()
+            #     print(f"Current settings applied:\n\n{readConfigData}\nWrite the name of the option you'd like to change or 'Return' to go back")
+            #     readConfigData=readConfigData.split("\n")
+            #     opt=input()
                 if "return" in opt:
                     break
         if quitRequest==True:
