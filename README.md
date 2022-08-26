@@ -1,2 +1,4 @@
 # Simple-Projects
-Simple Projects I am working on
+Simple projects I am working on. Each separate project will have it's own readme section.
+Projects are in different languages.
+You can have some fun looking at these projects or get some inspiration about what kind of project you want to do to build your portfolio.
